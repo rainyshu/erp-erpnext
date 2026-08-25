@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ERPNext Business Flow (Method-Level) Diagram</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'JetBrains Mono', monospace; background: #020617; min-height: 100vh; padding: 2rem; color: white; }
+    .container { max-width: 1280px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .section-title { display: flex; align-items: center; gap: 0.5rem; margin: 2.5rem 0 0.75rem; }
+    .section-title span.idx { color: #22d3ee; font-size: 0.75rem; border: 1px solid #22d3ee; border-radius: 4px; padding: 0.1rem 0.4rem; }
+    .section-title h2 { font-size: 1rem; font-weight: 600; }
+    .section-title p { color: #64748b; font-size: 0.72rem; margin-left: 0.5rem; }
+    .diagram-container { background: rgba(15, 23, 42, 0.5); border-radius: 1rem; border: 1px solid #1e293b; padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 940px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card { background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card-dot.orange { background: #fb923c; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.72rem; }
+    .card li { margin-bottom: 0.375rem; line-height: 1.5; }
+    .card code { color: #cbd5e1; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+    .toolbar { display: flex; gap: 0.5rem; margin-left: auto; flex-shrink: 0; align-items: center; }
+    .toolbar-toggle { background: transparent; border: none; color: #475569; cursor: pointer; font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.5rem; border-radius: 0.375rem; transition: color 0.2s, background 0.2s; }
+    .toolbar-toggle:hover { color: #94a3b8; background: rgba(30, 41, 59, 0.5); }
+    .toolbar-actions { display: none; gap: 0.5rem; }
+    .toolbar.expanded .toolbar-actions { display: flex; }
+    .toolbar-actions button { background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; color: #94a3b8; padding: 0.375rem 0.75rem; border-radius: 0.375rem; font-family: inherit; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .toolbar-actions button:hover { background: rgba(51, 65, 85, 0.8); color: white; border-color: #475569; }
+    @media print { body { background: #020617; padding: 1rem; } .toolbar { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="container" id="report-container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>ERPNext 业务流程 · 方法级调用链</h1>
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <button onclick="copyAsImage(this)">📋 Copy</button>
+            <button onclick="downloadPNG(this)">🖼️ PNG</button>
+            <button onclick="downloadPDF(this)">📄 PDF</button>
+          </div>
+          <button class="toolbar-toggle" onclick="this.parentElement.classList.toggle('expanded')" title="Export options" aria-label="Export options">⋯</button>
+        </div>
+      </div>
+      <p class="subtitle">节点 = 真实方法名(文件:行号)，箭头 = 实际调用关系 · 源码根目录 /Users/shurun/Soft/workspace/rainy/erp-erpnext/erpnext</p>
+    </div>
+
+    <!-- ============================ 0. 全局钩子编排 ============================ -->
+    <div class="section-title"><span class="idx">00</span><h2>全局入口与钩子编排</h2><p>hooks.py · doc_events / scheduler_events / regional_overrides</p></div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 620">
+        <defs>
+          <marker id="ah" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/></marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- arrows first -->
+        <line x1="150" y1="120" x2="228" y2="120" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="150" y1="330" x2="228" y2="330" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="150" y1="500" x2="228" y2="500" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="430" y1="120" x2="518" y2="120" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="430" y1="240" x2="518" y2="240" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="430" y1="330" x2="518" y2="330" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="430" y1="500" x2="518" y2="500" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="760" y1="120" x2="838" y2="120" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="760" y1="330" x2="838" y2="330" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- col1: triggers -->
+        <rect x="20" y="80" width="130" height="80" rx="6" fill="#0f172a"/>
+        <rect x="20" y="80" width="130" height="80" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="85" y="102" fill="white" font-size="10" font-weight="600" text-anchor="middle">Document.save()</text>
+        <text x="85" y="118" fill="#94a3b8" font-size="8" text-anchor="middle">frappe 生命周期</text>
+        <text x="85" y="132" fill="#94a3b8" font-size="8" text-anchor="middle">validate / on_submit</text>
+        <text x="85" y="148" fill="#22d3ee" font-size="8" text-anchor="middle">UI · REST · Portal</text>
+
+        <rect x="20" y="295" width="130" height="70" rx="6" fill="#0f172a"/>
+        <rect x="20" y="295" width="130" height="70" rx="6" fill="rgba(124, 45, 18, 0.35)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="85" y="317" fill="white" font-size="10" font-weight="600" text-anchor="middle">scheduler</text>
+        <text x="85" y="333" fill="#94a3b8" font-size="8" text-anchor="middle">cron 0/15 · hourly</text>
+        <text x="85" y="349" fill="#94a3b8" font-size="8" text-anchor="middle">daily · weekly · monthly</text>
+
+        <rect x="20" y="470" width="130" height="60" rx="6" fill="#0f172a"/>
+        <rect x="20" y="470" width="130" height="60" rx="6" fill="rgba(30, 41, 59, 0.6)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="85" y="494" fill="white" font-size="10" font-weight="600" text-anchor="middle">regional_overrides</text>
+        <text x="85" y="510" fill="#94a3b8" font-size="8" text-anchor="middle">hooks.py:645-658</text>
+
+        <!-- col2: hook maps -->
+        <rect x="230" y="70" width="200" height="150" rx="6" fill="#0f172a"/>
+        <rect x="230" y="70" width="200" height="150" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="330" y="90" fill="white" font-size="10" font-weight="600" text-anchor="middle">doc_events["*"].validate</text>
+        <text x="240" y="108" fill="#94a3b8" font-size="8">• service_level_agreement.apply</text>
+        <text x="240" y="122" fill="#94a3b8" font-size="8">• check_for_running_deletion_job</text>
+        <text x="240" y="136" fill="#94a3b8" font-size="8">• validate_transaction_company</text>
+        <text x="240" y="156" fill="#34d399" font-size="8">period_closing_doctypes (19)</text>
+        <text x="240" y="170" fill="#94a3b8" font-size="8">→ validate_accounting_period_on_doc_save</text>
+        <text x="240" y="188" fill="#34d399" font-size="8">pre_submit_validation_doctypes (5)</text>
+        <text x="240" y="202" fill="#94a3b8" font-size="8">→ accounts.utils.pre_submit_validation</text>
+
+        <rect x="230" y="240" width="200" height="0.1" fill="none"/>
+        <rect x="230" y="235" width="200" height="30" rx="6" fill="#0f172a"/>
+        <rect x="230" y="235" width="200" height="30" rx="6" fill="rgba(6, 78, 59, 0.25)" stroke="#34d399" stroke-width="1"/>
+        <text x="330" y="254" fill="#94a3b8" font-size="8" text-anchor="middle">Stock Entry.on_submit → update_completed_and_requested_qty</text>
+
+        <rect x="230" y="285" width="200" height="90" rx="6" fill="#0f172a"/>
+        <rect x="230" y="285" width="200" height="90" rx="6" fill="rgba(124, 45, 18, 0.35)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="330" y="304" fill="white" font-size="10" font-weight="600" text-anchor="middle">scheduler_events</text>
+        <text x="240" y="322" fill="#94a3b8" font-size="8">• run_parallel_reposting (0/15)</text>
+        <text x="240" y="336" fill="#94a3b8" font-size="8">• repost_entries (hourly_maint)</text>
+        <text x="240" y="350" fill="#94a3b8" font-size="8">• update_invoice_status / reorder_item</text>
+        <text x="240" y="364" fill="#94a3b8" font-size="8">• process_deferred_accounting (monthly)</text>
+
+        <rect x="230" y="470" width="200" height="60" rx="6" fill="#0f172a"/>
+        <rect x="230" y="470" width="200" height="60" rx="6" fill="rgba(30, 41, 59, 0.6)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="330" y="492" fill="white" font-size="10" font-weight="600" text-anchor="middle">regional.italy / uae / india</text>
+        <text x="330" y="510" fill="#94a3b8" font-size="8" text-anchor="middle">sales_invoice_on_submit · update_grand_total_for_rcm</text>
+
+        <!-- col3: controllers -->
+        <rect x="520" y="70" width="240" height="150" rx="6" fill="#0f172a"/>
+        <rect x="520" y="70" width="240" height="150" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="640" y="90" fill="white" font-size="10" font-weight="600" text-anchor="middle">controllers 层</text>
+        <text x="530" y="110" fill="#94a3b8" font-size="8">• accounts_controller.validate / on_submit</text>
+        <text x="530" y="124" fill="#94a3b8" font-size="8">• stock_controller.update_stock_ledger</text>
+        <text x="530" y="138" fill="#94a3b8" font-size="8">• status_updater.set_status:198</text>
+        <text x="530" y="152" fill="#94a3b8" font-size="8">• status_updater.update_prevdoc_status:194</text>
+        <text x="530" y="166" fill="#94a3b8" font-size="8">• buying_controller / selling_controller</text>
+        <text x="530" y="180" fill="#94a3b8" font-size="8">• taxes_and_totals.calculate_taxes_and_totals</text>
+        <text x="530" y="194" fill="#94a3b8" font-size="8">• ledger_preview.get_accounting_ledger_preview:17</text>
+        <text x="530" y="210" fill="#34d399" font-size="8">queries.py · item_variant.py · trends.py</text>
+
+        <rect x="520" y="235" width="240" height="30" rx="6" fill="#0f172a"/>
+        <rect x="520" y="235" width="240" height="30" rx="6" fill="rgba(6, 78, 59, 0.25)" stroke="#34d399" stroke-width="1"/>
+        <text x="640" y="254" fill="#94a3b8" font-size="8" text-anchor="middle">material_request.update_completed_and_requested_qty</text>
+
+        <rect x="520" y="285" width="240" height="90" rx="6" fill="#0f172a"/>
+        <rect x="520" y="285" width="240" height="90" rx="6" fill="rgba(124, 45, 18, 0.35)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="640" y="304" fill="white" font-size="10" font-weight="600" text-anchor="middle">后台批处理方法</text>
+        <text x="530" y="322" fill="#94a3b8" font-size="8">• repost_item_valuation.repost_entries</text>
+        <text x="530" y="336" fill="#94a3b8" font-size="8">• stock_ledger.repost_future_sle:334</text>
+        <text x="530" y="350" fill="#94a3b8" font-size="8">• accounts.utils.update_gl_entries_after:1656</text>
+        <text x="530" y="364" fill="#94a3b8" font-size="8">• reorder_item._reorder_item:24</text>
+
+        <!-- col4: persistence -->
+        <rect x="840" y="80" width="140" height="110" rx="6" fill="#0f172a"/>
+        <rect x="840" y="80" width="140" height="110" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="910" y="100" fill="white" font-size="10" font-weight="600" text-anchor="middle">账簿与库存表</text>
+        <text x="850" y="120" fill="#94a3b8" font-size="8">• GL Entry</text>
+        <text x="850" y="134" fill="#94a3b8" font-size="8">• Payment Ledger Entry</text>
+        <text x="850" y="148" fill="#94a3b8" font-size="8">• Stock Ledger Entry</text>
+        <text x="850" y="162" fill="#94a3b8" font-size="8">• Bin / Batch / Serial No</text>
+        <text x="850" y="180" fill="#a78bfa" font-size="8">不可变 + 反向分录</text>
+
+        <rect x="840" y="295" width="140" height="70" rx="6" fill="#0f172a"/>
+        <rect x="840" y="295" width="140" height="70" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="910" y="317" fill="white" font-size="10" font-weight="600" text-anchor="middle">Repost Item Valuation</text>
+        <text x="910" y="335" fill="#94a3b8" font-size="8" text-anchor="middle">items_to_be_repost</text>
+        <text x="910" y="349" fill="#94a3b8" font-size="8" text-anchor="middle">current_index · gz 附件</text>
+
+        <!-- legend outside -->
+        <text x="30" y="580" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="90" y="571" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="112" y="579" fill="#94a3b8" font-size="8">入口/前端</text>
+        <rect x="190" y="571" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="212" y="579" fill="#94a3b8" font-size="8">业务方法</text>
+        <rect x="290" y="571" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="312" y="579" fill="#94a3b8" font-size="8">持久化/账簿</text>
+        <rect x="400" y="571" width="16" height="10" rx="2" fill="rgba(124, 45, 18, 0.35)" stroke="#fb923c" stroke-width="1"/>
+        <text x="422" y="579" fill="#94a3b8" font-size="8">异步/定时</text>
+        <rect x="500" y="571" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="522" y="579" fill="#94a3b8" font-size="8">校验/异常</text>
+        <rect x="600" y="571" width="16" height="10" rx="2" fill="rgba(30, 41, 59, 0.6)" stroke="#94a3b8" stroke-width="1"/>
+        <text x="622" y="579" fill="#94a3b8" font-size="8">通用/区域化</text>
+      </svg>
+    </div>
+    <!-- ============================ 1. 库存台账主链 ============================ -->
+    <div class="section-title"><span class="idx">01</span><h2>库存台账主链 · stock_ledger.py</h2><p>make_sl_entries → update_entries_after.build → process_sle 估值核心</p></div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 940">
+        <defs>
+          <marker id="ah" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/></marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- arrows (drawn first) -->
+        <line x1="180" y1="95" x2="180" y2="128" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="188" x2="180" y2="221" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="281" x2="180" y2="314" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="374" x2="180" y2="407" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="320" y1="60" x2="392" y2="60" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="320" y1="155" x2="392" y2="155" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="320" y1="250" x2="392" y2="250" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="320" y1="345" x2="392" y2="345" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="600" y1="345" x2="672" y2="345" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="500" y1="440" x2="500" y2="478" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="300" y1="620" x2="300" y2="658" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="700" y1="620" x2="700" y2="658" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="470" x2="180" y2="700" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#ah)"/>
+
+        <!-- left column: entry chain -->
+        <rect x="90" y="40" width="180" height="55" rx="6" fill="#0f172a"/>
+        <rect x="90" y="40" width="180" height="55" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="180" y="62" fill="white" font-size="10" font-weight="600" text-anchor="middle">make_sl_entries():129</text>
+        <text x="180" y="80" fill="#94a3b8" font-size="8" text-anchor="middle">库存分录统一入口</text>
+
+        <rect x="90" y="128" width="180" height="60" rx="6" fill="#0f172a"/>
+        <rect x="90" y="128" width="180" height="60" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="180" y="148" fill="white" font-size="10" font-weight="600" text-anchor="middle">前置校验</text>
+        <text x="180" y="164" fill="#94a3b8" font-size="8" text-anchor="middle">validate_standard_cost_posting_date:57</text>
+        <text x="180" y="178" fill="#94a3b8" font-size="8" text-anchor="middle">validate_stock_frozen_by_closing_entry:103</text>
+
+        <rect x="90" y="221" width="180" height="60" rx="6" fill="#0f172a"/>
+        <rect x="90" y="221" width="180" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="180" y="241" fill="white" font-size="10" font-weight="600" text-anchor="middle">make_entry():282</text>
+        <text x="180" y="257" fill="#94a3b8" font-size="8" text-anchor="middle">sle_processing_gate:322</text>
+        <text x="180" y="271" fill="#94a3b8" font-size="8" text-anchor="middle">get_or_make_bin(utils:244)</text>
+
+        <rect x="90" y="314" width="180" height="60" rx="6" fill="#0f172a"/>
+        <rect x="90" y="314" width="180" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="180" y="334" fill="white" font-size="10" font-weight="600" text-anchor="middle">repost_current_voucher():202</text>
+        <text x="180" y="350" fill="#94a3b8" font-size="8" text-anchor="middle">update_entries_after(同步)</text>
+        <text x="180" y="364" fill="#94a3b8" font-size="8" text-anchor="middle">update_qty_in_future_sle:2261</text>
+
+        <rect x="90" y="407" width="180" height="63" rx="6" fill="#0f172a"/>
+        <rect x="90" y="407" width="180" height="63" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="180" y="427" fill="white" font-size="10" font-weight="600" text-anchor="middle">bin.update_qty_from_sle:261</text>
+        <text x="180" y="443" fill="#94a3b8" font-size="8" text-anchor="middle">get_actual_qty:319</text>
+        <text x="180" y="457" fill="#94a3b8" font-size="8" text-anchor="middle">get_last_sle_values:323</text>
+
+        <!-- right column: cancel / negative / repost -->
+        <rect x="394" y="35" width="270" height="50" rx="6" fill="#0f172a"/>
+        <rect x="394" y="35" width="270" height="50" rx="6" fill="rgba(30, 41, 59, 0.6)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="529" y="54" fill="white" font-size="10" font-weight="600" text-anchor="middle">取消分支 validate_cancellation:243 → set_as_cancel:271</text>
+        <text x="529" y="72" fill="#94a3b8" font-size="8" text-anchor="middle">get_incoming_outgoing_rate_for_cancel(utils:537) · get_args_for_future_sle:232</text>
+
+        <rect x="394" y="120" width="270" height="72" rx="6" fill="#0f172a"/>
+        <rect x="394" y="120" width="270" height="72" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="529" y="139" fill="white" font-size="10" font-weight="600" text-anchor="middle">validate_negative_qty_in_future_sle:2404</text>
+        <text x="404" y="156" fill="#94a3b8" font-size="8">→ is_negative_stock_allowed:2581</text>
+        <text x="404" y="169" fill="#94a3b8" font-size="8">→ get_future_sle_with_negative_qty:2468 / _batch_qty:2493</text>
+        <text x="404" y="182" fill="#fb7185" font-size="8">→ validate_reserved_stock:2519 → NegativeStockError:49</text>
+
+        <rect x="394" y="215" width="270" height="72" rx="6" fill="#0f172a"/>
+        <rect x="394" y="215" width="270" height="72" rx="6" fill="rgba(124, 45, 18, 0.35)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="529" y="234" fill="white" font-size="10" font-weight="600" text-anchor="middle">repost_future_sle():334</text>
+        <text x="404" y="251" fill="#94a3b8" font-size="8">get_items_to_be_repost:508 · get_reposting_data:568</text>
+        <text x="404" y="264" fill="#94a3b8" font-size="8">get_current_index:597 · repost_gate:306 · validate_item_warehouse:502</text>
+        <text x="404" y="277" fill="#fb923c" font-size="8">update_args_in_repost_item_valuation:398 → create_json_gz_file:464</text>
+
+        <!-- update_entries_after class box -->
+        <rect x="394" y="310" width="206" height="70" rx="6" fill="#0f172a"/>
+        <rect x="394" y="310" width="206" height="70" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="497" y="330" fill="white" font-size="10" font-weight="600" text-anchor="middle">class update_entries_after:602</text>
+        <text x="404" y="347" fill="#94a3b8" font-size="8">__init__:617 → set_precision:682</text>
+        <text x="404" y="360" fill="#94a3b8" font-size="8">get_valuation_method(utils:376)</text>
+        <text x="404" y="373" fill="#94a3b8" font-size="8">initialize_previous_data:688</text>
+
+        <rect x="674" y="310" width="300" height="70" rx="6" fill="#0f172a"/>
+        <rect x="674" y="310" width="300" height="70" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="824" y="330" fill="white" font-size="10" font-weight="600" text-anchor="middle">build():741</text>
+        <text x="684" y="347" fill="#94a3b8" font-size="8">当前时间戳分支: process_sle_against_current_timestamp:970</text>
+        <text x="684" y="360" fill="#94a3b8" font-size="8">→ get_sle_against_current_voucher:1955 → seed_previous_sle_for_cancellation:978</text>
+        <text x="684" y="373" fill="#94a3b8" font-size="8">重过账分支: initialize_reposting:760 → repost_stock_ledgers:799</text>
+
+        <!-- repost_stock_ledgers detail -->
+        <rect x="300" y="478" width="400" height="142" rx="6" fill="#0f172a"/>
+        <rect x="300" y="478" width="400" height="142" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="500" y="498" fill="white" font-size="10" font-weight="600" text-anchor="middle">repost_stock_ledgers():799 / process_sle():1038 估值核心</text>
+        <text x="312" y="516" fill="#94a3b8" font-size="8">_get_future_entries_to_repost:788 → get_future_entries_to_repost:935 → get_stock_ledger_entries:2043</text>
+        <text x="312" y="529" fill="#94a3b8" font-size="8">sort_sles:835 · get_previous_sle_of_current_voucher:1978 · repost_stock_ledger_entry:868</text>
+        <text x="312" y="542" fill="#94a3b8" font-size="8">include_dependant_sle_in_reposting:844 → is_repack_entry:2714 / get_sles_for_repack:938</text>
+        <text x="312" y="555" fill="#94a3b8" font-size="8">process_sle:1038 → validate_previous_sle_qty:997 · validate_negative_stock:1397</text>
+        <text x="312" y="568" fill="#94a3b8" font-size="8">get_dynamic_incoming_outgoing_rate:1417 → get_incoming_outgoing_rate_from_transaction:1440</text>
+        <text x="312" y="581" fill="#94a3b8" font-size="8">估值分派: get_moving_average_values:1724 / update_queue_values:1763 (FIFO·LIFO)</text>
+        <text x="312" y="594" fill="#94a3b8" font-size="8">calculate_valuation_for_serial_batch_bundle:1273 · update_batched_values:1820</text>
+        <text x="312" y="607" fill="#34d399" font-size="8">get_stock_value_difference:2632 · update_outgoing_rate_on_transaction:1565</text>
+
+        <!-- outputs -->
+        <rect x="120" y="658" width="360" height="118" rx="6" fill="#0f172a"/>
+        <rect x="120" y="658" width="360" height="118" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="300" y="678" fill="white" font-size="10" font-weight="600" text-anchor="middle">反向回写上游单据行 update_outgoing_rate_on_transaction:1565</text>
+        <text x="132" y="697" fill="#94a3b8" font-size="8">update_rate_on_stock_entry:1587 · is_manufacture_entry_with_sabb:1594</text>
+        <text x="132" y="710" fill="#94a3b8" font-size="8">update_rate_on_delivery_and_sales_return:1619</text>
+        <text x="132" y="723" fill="#94a3b8" font-size="8">update_rate_on_purchase_receipt:1635</text>
+        <text x="132" y="736" fill="#94a3b8" font-size="8">update_rate_on_subcontracting_receipt:1662</text>
+        <text x="132" y="749" fill="#94a3b8" font-size="8">update_rate_on_stock_reconciliation:1678</text>
+        <text x="132" y="766" fill="#34d399" font-size="8">recalculate_amounts_in_stock_entry:1606</text>
+
+        <rect x="520" y="658" width="360" height="118" rx="6" fill="#0f172a"/>
+        <rect x="520" y="658" width="360" height="118" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="700" y="678" fill="white" font-size="10" font-weight="600" text-anchor="middle">收尾与仓位快照</text>
+        <text x="532" y="697" fill="#94a3b8" font-size="8">update_bin:1940 · reset_vouchers_and_idx:892</text>
+        <text x="532" y="710" fill="#94a3b8" font-size="8">update_data_in_repost:897 · raise_exceptions:1894</text>
+        <text x="532" y="723" fill="#94a3b8" font-size="8">publish_real_time_progress:923 (实时进度)</text>
+        <text x="532" y="736" fill="#94a3b8" font-size="8">bin.recalculate_values:40 → set_projected_qty:78</text>
+        <text x="532" y="749" fill="#94a3b8" font-size="8">stock_balance.repost:12 → repost_stock:40 → repost_actual_qty:64</text>
+        <text x="532" y="766" fill="#a78bfa" font-size="8">projected = actual+ordered+indented+planned−reserved*</text>
+
+        <!-- valuation engines -->
+        <rect x="120" y="806" width="360" height="86" rx="6" fill="#0f172a"/>
+        <rect x="120" y="806" width="360" height="86" rx="6" fill="rgba(30, 41, 59, 0.6)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="300" y="826" fill="white" font-size="10" font-weight="600" text-anchor="middle">valuation.py 估值算法</text>
+        <text x="132" y="845" fill="#94a3b8" font-size="8">BinWiseValuation:14 → add_stock:16 / remove_stock:20 / state:30</text>
+        <text x="132" y="858" fill="#94a3b8" font-size="8">FIFOValuation:55 → add_stock:78 / remove_stock:102 (队列头出)</text>
+        <text x="132" y="871" fill="#94a3b8" font-size="8">LIFOValuation:162 → add_stock:186 / remove_stock:212 (栈尾出)</text>
+        <text x="132" y="886" fill="#94a3b8" font-size="8">get_total_stock_and_value:33 → round_off_if_near_zero:260</text>
+
+        <rect x="520" y="806" width="360" height="86" rx="6" fill="#0f172a"/>
+        <rect x="520" y="806" width="360" height="86" rx="6" fill="rgba(124, 45, 18, 0.35)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="700" y="826" fill="white" font-size="10" font-weight="600" text-anchor="middle">补货流程 reorder_item.py (daily)</text>
+        <text x="532" y="845" fill="#94a3b8" font-size="8">reorder_item:14 → _reorder_item:24 → get_items_for_reorder:118</text>
+        <text x="532" y="858" fill="#94a3b8" font-size="8">get_item_warehouse_projected_qty:181 · get_reorder_levels_for_variants:156</text>
+        <text x="532" y="871" fill="#94a3b8" font-size="8">create_material_request:213 (savepoint "reorder_mr" + submit)</text>
+        <text x="532" y="886" fill="#fb923c" font-size="8">send_email_notification:312 → get_email_list:326 · notify_errors:367</text>
+
+        <!-- legend outside all boxes -->
+        <text x="30" y="925" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="90" y="916" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="112" y="924" fill="#94a3b8" font-size="8">库存方法</text>
+        <rect x="190" y="916" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="212" y="924" fill="#94a3b8" font-size="8">校验/异常</text>
+        <rect x="290" y="916" width="16" height="10" rx="2" fill="rgba(124, 45, 18, 0.35)" stroke="#fb923c" stroke-width="1"/>
+        <text x="312" y="924" fill="#94a3b8" font-size="8">异步重过账</text>
+        <rect x="400" y="916" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="422" y="924" fill="#94a3b8" font-size="8">Bin/账簿写入</text>
+        <line x1="520" y1="921" x2="540" y2="921" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,5"/>
+        <text x="546" y="924" fill="#94a3b8" font-size="8">异步/延迟触发</text>
+      </svg>
+    </div>
+
+    <!-- ============================ 2. 序列号批次 ============================ -->
+    <div class="section-title"><span class="idx">02</span><h2>序列号 / 批次包 · serial_batch_bundle.py</h2><p>SerialBatchBundle · SerialNoValuation · BatchNoValuation · SerialBatchCreation</p></div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 700">
+        <defs>
+          <marker id="ah" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/></marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <line x1="180" y1="120" x2="180" y2="158" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="248" x2="180" y2="286" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="386" x2="180" y2="424" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="330" y1="200" x2="402" y2="200" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="330" y1="340" x2="402" y2="340" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="700" y1="200" x2="700" y2="288" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="330" y1="470" x2="402" y2="470" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <rect x="60" y="60" width="240" height="60" rx="6" fill="#0f172a"/>
+        <rect x="60" y="60" width="240" height="60" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="180" y="82" fill="white" font-size="10" font-weight="600" text-anchor="middle">class SerialBatchBundle:57 · __init__:58</text>
+        <text x="180" y="100" fill="#94a3b8" font-size="8" text-anchor="middle">set_item_details:75 · 由 stock_controller 调用</text>
+        <text x="180" y="114" fill="#22d3ee" font-size="8" text-anchor="middle">process_serial_and_batch_bundle:69</text>
+
+        <rect x="60" y="158" width="240" height="90" rx="6" fill="#0f172a"/>
+        <rect x="60" y="158" width="240" height="90" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="180" y="178" fill="white" font-size="10" font-weight="600" text-anchor="middle">process_serial_no:88</text>
+        <text x="72" y="196" fill="#94a3b8" font-size="8">is_material_transfer:98</text>
+        <text x="72" y="209" fill="#94a3b8" font-size="8">→ make_serial_batch_no_bundle_for_material_transfer:112</text>
+        <text x="72" y="222" fill="#94a3b8" font-size="8">→ make_serial_batch_no_bundle:132</text>
+        <text x="72" y="235" fill="#94a3b8" font-size="8">validate_item:181 · validate_actual_qty:160</text>
+        <text x="72" y="245" fill="#34d399" font-size="8">validate_item_and_warehouse:322 · set_serial_and_batch_bundle:210</text>
+
+        <rect x="60" y="286" width="240" height="100" rx="6" fill="#0f172a"/>
+        <rect x="60" y="286" width="240" height="100" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="180" y="306" fill="white" font-size="10" font-weight="600" text-anchor="middle">post_process:376</text>
+        <text x="72" y="324" fill="#94a3b8" font-size="8">submit_serial_and_batch_bundle:440</text>
+        <text x="72" y="337" fill="#94a3b8" font-size="8">set_warehouse_and_status_in_serial_nos:450</text>
+        <text x="72" y="350" fill="#94a3b8" font-size="8">→ get_status_for_serial_nos:469</text>
+        <text x="72" y="363" fill="#94a3b8" font-size="8">→ update_serial_no_status_warehouse:472</text>
+        <text x="72" y="376" fill="#94a3b8" font-size="8">→ update_serial_no_status_for_stock_reco:514 · set_batch_no_in_serial_nos:547</text>
+
+        <rect x="60" y="424" width="240" height="86" rx="6" fill="#0f172a"/>
+        <rect x="60" y="424" width="240" height="86" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="180" y="444" fill="white" font-size="10" font-weight="600" text-anchor="middle">取消 / 解链</text>
+        <text x="72" y="462" fill="#94a3b8" font-size="8">cancel_serial_and_batch_bundle:413</text>
+        <text x="72" y="475" fill="#94a3b8" font-size="8">→ is_pos_or_asset_repair_transaction:421</text>
+        <text x="72" y="488" fill="#94a3b8" font-size="8">delink_serial_and_batch_bundle:342</text>
+        <text x="72" y="503" fill="#fb7185" font-size="8">throw_negative_batch_validation:1678</text>
+
+        <rect x="404" y="150" width="270" height="100" rx="6" fill="#0f172a"/>
+        <rect x="404" y="150" width="270" height="100" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="539" y="170" fill="white" font-size="10" font-weight="600" text-anchor="middle">class SerialNoValuation:639</text>
+        <text x="416" y="188" fill="#94a3b8" font-size="8">__init__:640 → calculate_stock_value_change:647</text>
+        <text x="416" y="201" fill="#94a3b8" font-size="8">→ get_serial_nos:757 / get_serial_no_wise_incoming_rate:674</text>
+        <text x="416" y="214" fill="#94a3b8" font-size="8">calculate_valuation_rate:763</text>
+        <text x="416" y="227" fill="#94a3b8" font-size="8">get_incoming_rate:791 / get_incoming_rate_of_serial_no:797</text>
+        <text x="416" y="243" fill="#a78bfa" font-size="8">被 process_sle → calculate_valuation_for_serial_batch_bundle:1273 调用</text>
+
+        <rect x="404" y="288" width="270" height="112" rx="6" fill="#0f172a"/>
+        <rect x="404" y="288" width="270" height="112" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="539" y="308" fill="white" font-size="10" font-weight="600" text-anchor="middle">class BatchNoValuation:810</text>
+        <text x="416" y="326" fill="#94a3b8" font-size="8">__init__:811 → get_batch_nos:1014 / prepare_batches:984</text>
+        <text x="416" y="339" fill="#94a3b8" font-size="8">calculate_avg_rate:822 (advisory lock / for update)</text>
+        <text x="416" y="352" fill="#94a3b8" font-size="8">→ seed_from_stock_closing_balance:852</text>
+        <text x="416" y="365" fill="#94a3b8" font-size="8">→ get_closing_entry_for_seeding:868 / get_stock_closing_balance_entries:883</text>
+        <text x="416" y="378" fill="#94a3b8" font-size="8">get_batch_stock_before_date:898 · calculate_valuation_rate:1036</text>
+        <text x="416" y="394" fill="#a78bfa" font-size="8">set_stock_value_difference:1020</text>
+
+        <rect x="404" y="424" width="270" height="112" rx="6" fill="#0f172a"/>
+        <rect x="404" y="424" width="270" height="112" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="539" y="444" fill="white" font-size="10" font-weight="600" text-anchor="middle">class SerialBatchCreation:1144</text>
+        <text x="416" y="462" fill="#94a3b8" font-size="8">make_serial_and_batch_bundle:1231 · validate_qty:1322</text>
+        <text x="416" y="475" fill="#94a3b8" font-size="8">set_auto_serial_batch_entries_for_outward:1335</text>
+        <text x="416" y="488" fill="#94a3b8" font-size="8">set_auto_serial_batch_entries_for_inward:1369</text>
+        <text x="416" y="501" fill="#94a3b8" font-size="8">→ create_batch:1505 / get_auto_created_serial_nos:1536</text>
+        <text x="416" y="514" fill="#94a3b8" font-size="8">→ make_serial_no_if_not_exists:1385 → make_serial_nos:1394</text>
+        <text x="416" y="530" fill="#fbbf24" font-size="8">set_serial_batch_entries:1438 → get_standard_cost_rate:1486 · duplicate_package:1197</text>
+
+        <rect x="700" y="60" width="280" height="130" rx="6" fill="#0f172a"/>
+        <rect x="700" y="60" width="280" height="130" rx="6" fill="rgba(30, 41, 59, 0.6)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="840" y="80" fill="white" font-size="10" font-weight="600" text-anchor="middle">模块级查询工具</text>
+        <text x="712" y="98" fill="#94a3b8" font-size="8">get_serial_no_status:26 / get_status_for_serial_nos:40</text>
+        <text x="712" y="111" fill="#94a3b8" font-size="8">get_serial_nos:567 / get_batches_from_bundle:583</text>
+        <text x="712" y="124" fill="#94a3b8" font-size="8">get_serial_nos_from_bundle:603 / get_serial_or_batch_nos:607</text>
+        <text x="712" y="137" fill="#94a3b8" font-size="8">get_batch_nos:1063</text>
+        <text x="712" y="150" fill="#94a3b8" font-size="8">get_empty_batches_based_work_order:1081</text>
+        <text x="712" y="163" fill="#94a3b8" font-size="8">→ get_batches_from_work_order:1104</text>
+        <text x="712" y="176" fill="#94a3b8" font-size="8">→ get_batches_from_stock_entries:1115</text>
+
+        <rect x="700" y="288" width="280" height="86" rx="6" fill="#0f172a"/>
+        <rect x="700" y="288" width="280" height="86" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="840" y="308" fill="white" font-size="10" font-weight="600" text-anchor="middle">批次数量维护</text>
+        <text x="712" y="326" fill="#94a3b8" font-size="8">update_batch_qty:1654</text>
+        <text x="712" y="339" fill="#94a3b8" font-size="8">→ get_batch_current_qty:1670</text>
+        <text x="712" y="352" fill="#94a3b8" font-size="8">→ get_batchwise_qty:1688</text>
+        <text x="712" y="367" fill="#94a3b8" font-size="8">set_batch_details_from_package:1133</text>
+
+        <rect x="700" y="424" width="280" height="112" rx="6" fill="#0f172a"/>
+        <rect x="700" y="424" width="280" height="112" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="840" y="444" fill="white" font-size="10" font-weight="600" text-anchor="middle">get_item_details.py 取价主链</text>
+        <text x="712" y="462" fill="#94a3b8" font-size="8">get_item_details:80 → _preprocess_ctx:66 → get_item_code:414</text>
+        <text x="712" y="475" fill="#94a3b8" font-size="8">→ validate_item_details:427 → get_basic_details:446</text>
+        <text x="712" y="488" fill="#94a3b8" font-size="8">→ get_item_tax_template:822 / get_item_tax_map:961</text>
+        <text x="712" y="501" fill="#94a3b8" font-size="8">→ set_valuation_rate:272 · get_price_list_rate:1135</text>
+        <text x="712" y="514" fill="#94a3b8" font-size="8">→ update_stock:294 → filter_batches:379 / get_filtered_serial_nos:387</text>
+        <text x="712" y="530" fill="#22d3ee" font-size="8">→ update_bin_details:402 → get_bin_details:1623 → get_projected_qty:1614</text>
+
+        <rect x="60" y="560" width="920" height="90" rx="6" fill="#0f172a"/>
+        <rect x="60" y="560" width="920" height="90" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="520" y="580" fill="white" font-size="10" font-weight="600" text-anchor="middle">stock/utils.py 共享方法族（被上述所有链路调用）</text>
+        <text x="72" y="598" fill="#94a3b8" font-size="8">get_stock_balance:99 · get_stock_value_from_bin:33 · get_stock_value_on:62 · get_latest_stock_qty:180 · get_bin:234 · get_or_make_bin:244 → _create_bin:253</text>
+        <text x="72" y="611" fill="#94a3b8" font-size="8">get_incoming_rate:270 → SerialNoValuation / BatchNoValuation / get_previous_sle / _get_fifo_lifo_rate:398 / get_valuation_rate(stock_ledger:2145)</text>
+        <text x="72" y="624" fill="#94a3b8" font-size="8">get_valuation_method:376 (@request_cache) · get_fifo_rate:388 · get_lifo_rate:393 · get_avg_purchase_rate:364 · get_incoming_outgoing_rate_for_cancel:537</text>
+        <text x="72" y="640" fill="#34d399" font-size="8">check_pending_reposting:568 → PendingRepostingError:29 · scan_barcode:600 → _update_item_info:668 · get_combine_datetime:691</text>
+
+        <text x="30" y="685" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="90" y="676" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="112" y="684" fill="#94a3b8" font-size="8">入口/取价</text>
+        <rect x="190" y="676" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="212" y="684" fill="#94a3b8" font-size="8">业务方法</text>
+        <rect x="290" y="676" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="312" y="684" fill="#94a3b8" font-size="8">估值/数量</text>
+        <rect x="400" y="676" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="422" y="684" fill="#94a3b8" font-size="8">自动创建</text>
+        <rect x="500" y="676" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="522" y="684" fill="#94a3b8" font-size="8">取消/校验</text>
+      </svg>
+    </div>
+    <div class="section-title"><span class="idx">03</span><h2>财务会计主链 · general_ledger.py / accounts/utils.py / party.py</h2><p>make_gl_entries → process_gl_map → save_entries · reconcile_against_document → QueryPaymentLedger</p></div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 1100">
+        <defs>
+          <marker id="ah" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/></marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- arrows first -->
+        <line x1="175" y1="94" x2="175" y2="132" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="178" x2="175" y2="216" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="262" x2="175" y2="300" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="332" x2="175" y2="370" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="416" x2="175" y2="454" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="512" x2="175" y2="550" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="582" x2="175" y2="620" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="652" x2="175" y2="690" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="748" x2="175" y2="786" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="832" x2="175" y2="870" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="175" y1="906" x2="175" y2="944" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <line x1="495" y1="90" x2="495" y2="128" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="178" x2="495" y2="216" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="248" x2="495" y2="286" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="322" x2="495" y2="360" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="410" x2="495" y2="448" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="484" x2="495" y2="522" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="554" x2="495" y2="592" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="624" x2="495" y2="662" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="724" x2="495" y2="762" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="808" x2="495" y2="846" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="495" y1="908" x2="495" y2="946" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <line x1="820" y1="90" x2="820" y2="128" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="820" y1="160" x2="820" y2="198" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="820" y1="252" x2="820" y2="290" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="820" y1="344" x2="820" y2="382" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="820" y1="428" x2="820" y2="466" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="820" y1="540" x2="820" y2="578" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="820" y1="656" x2="820" y2="694" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="820" y1="752" x2="820" y2="790" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="820" y1="860" x2="820" y2="898" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- cross links -->
+        <line x1="320" y1="308" x2="348" y2="308" stroke="#64748b" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#ah)"/>
+        <line x1="640" y1="392" x2="668" y2="392" stroke="#64748b" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#ah)"/>
+
+        <text x="30" y="44" fill="#22d3ee" font-size="10" font-weight="600">A · 总账写入链 general_ledger.py</text>
+        <text x="350" y="44" fill="#22d3ee" font-size="10" font-weight="600">B · 核销/未结额链 accounts/utils.py</text>
+        <text x="670" y="44" fill="#22d3ee" font-size="10" font-weight="600">C · 交易方/税金/预收付 services</text>
+
+        <!-- A column -->
+        <rect x="30" y="60" width="290" height="34" rx="6" fill="#0f172a"/>
+        <rect x="30" y="60" width="290" height="34" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="42" y="76" fill="white" font-size="10" font-weight="600">make_gl_entries():34</text>
+        <text x="42" y="88" fill="#94a3b8" font-size="8">入口：gl_map / cancel / adv_adj / merge_entries</text>
+
+        <rect x="30" y="134" width="290" height="44" rx="6" fill="#0f172a"/>
+        <rect x="30" y="134" width="290" height="44" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="42" y="150" fill="white" font-size="10" font-weight="600">前置校验</text>
+        <text x="42" y="162" fill="#94a3b8" font-size="8">BudgetValidation · validate_accounting_period</text>
+        <text x="42" y="173" fill="#94a3b8" font-size="8">validate_disabled_accounts</text>
+
+        <rect x="30" y="218" width="290" height="44" rx="6" fill="#0f172a"/>
+        <rect x="30" y="218" width="290" height="44" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="42" y="234" fill="white" font-size="10" font-weight="600">make_acc_dimensions_offsetting_entry:77</text>
+        <text x="42" y="246" fill="#94a3b8" font-size="8">→ get_accounting_dimensions_for_offsetting_entry:113</text>
+        <text x="42" y="257" fill="#94a3b8" font-size="8">自动生成维度对冲分录</text>
+
+        <rect x="30" y="302" width="290" height="30" rx="6" fill="#0f172a"/>
+        <rect x="30" y="302" width="290" height="30" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="321" fill="white" font-size="10" font-weight="600">process_gl_map():141</text>
+
+        <rect x="30" y="372" width="290" height="44" rx="6" fill="#0f172a"/>
+        <rect x="30" y="372" width="290" height="44" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="388" fill="white" font-size="10" font-weight="600">distribute_gl_based_on_cost_center_allocation:156</text>
+        <text x="42" y="400" fill="#94a3b8" font-size="8">→ get_cost_center_allocation_data:199</text>
+        <text x="42" y="411" fill="#94a3b8" font-size="8">按成本中心分摊比例拆分行</text>
+
+        <rect x="30" y="456" width="290" height="56" rx="6" fill="#0f172a"/>
+        <rect x="30" y="456" width="290" height="56" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="472" fill="white" font-size="10" font-weight="600">merge_similar_entries:226</text>
+        <text x="42" y="484" fill="#94a3b8" font-size="8">→ get_merge_properties:282</text>
+        <text x="42" y="495" fill="#94a3b8" font-size="8">→ get_merge_key:302</text>
+        <text x="42" y="506" fill="#94a3b8" font-size="8">→ check_if_in_list:310</text>
+
+        <rect x="30" y="552" width="290" height="30" rx="6" fill="#0f172a"/>
+        <rect x="30" y="552" width="290" height="30" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="571" fill="white" font-size="10" font-weight="600">toggle_debit_credit_if_negative:316</text>
+
+        <rect x="30" y="622" width="290" height="30" rx="6" fill="#0f172a"/>
+        <rect x="30" y="622" width="290" height="30" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="641" fill="white" font-size="10" font-weight="600">save_entries:359 → validate_cwip_accounts</text>
+
+        <rect x="30" y="692" width="290" height="56" rx="6" fill="#0f172a"/>
+        <rect x="30" y="692" width="290" height="56" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="42" y="708" fill="white" font-size="10" font-weight="600">process_debit_credit_difference:397</text>
+        <text x="42" y="720" fill="#94a3b8" font-size="8">→ get_debit_credit_difference:430</text>
+        <text x="42" y="731" fill="#94a3b8" font-size="8">→ get_debit_credit_allowance:451 · has_opening_entries:468</text>
+        <text x="42" y="742" fill="#94a3b8" font-size="8">→ raise_debit_credit_not_equal_error:460</text>
+
+        <rect x="30" y="788" width="290" height="44" rx="6" fill="#0f172a"/>
+        <rect x="30" y="788" width="290" height="44" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="42" y="804" fill="white" font-size="10" font-weight="600">make_round_off_gle:475</text>
+        <text x="42" y="816" fill="#94a3b8" font-size="8">→ get_round_off_account_and_cost_center:573</text>
+        <text x="42" y="827" fill="#94a3b8" font-size="8">→ update_accounting_dimensions:543</text>
+
+        <rect x="30" y="872" width="290" height="34" rx="6" fill="#0f172a"/>
+        <rect x="30" y="872" width="290" height="34" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="42" y="888" fill="white" font-size="10" font-weight="600">make_entry:377 → GL Entry.submit()</text>
+        <text x="42" y="900" fill="#94a3b8" font-size="8">→ is_immutable_ledger_enabled(utils:2773)</text>
+
+        <rect x="30" y="946" width="290" height="44" rx="6" fill="#0f172a"/>
+        <rect x="30" y="946" width="290" height="44" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="42" y="962" fill="white" font-size="10" font-weight="600">make_reverse_gl_entries:607（取消分支）</text>
+        <text x="42" y="974" fill="#94a3b8" font-size="8">不可变账簿 → 反向分录；否则 set_as_cancel:728</text>
+        <text x="42" y="985" fill="#94a3b8" font-size="8">→ create_payment_ledger_entry(utils:2151)</text>
+
+        <!-- B column -->
+        <rect x="350" y="60" width="290" height="30" rx="6" fill="#0f172a"/>
+        <rect x="350" y="60" width="290" height="30" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="362" y="79" fill="white" font-size="10" font-weight="600">reconcile_against_document:516</text>
+
+        <rect x="350" y="128" width="290" height="50" rx="6" fill="#0f172a"/>
+        <rect x="350" y="128" width="290" height="50" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="362" y="144" fill="white" font-size="10" font-weight="600">校验预收付是否被改动</text>
+        <text x="362" y="156" fill="#94a3b8" font-size="8">→ check_if_advance_entry_modified:589</text>
+        <text x="362" y="167" fill="#94a3b8" font-size="8">→ validate_allocated_amount:661</text>
+
+        <rect x="350" y="218" width="290" height="30" rx="6" fill="#0f172a"/>
+        <rect x="350" y="218" width="290" height="30" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="362" y="237" fill="white" font-size="10" font-weight="600">_build_dimensions_dict_for_exc_gain_loss:505</text>
+
+        <rect x="350" y="286" width="290" height="36" rx="6" fill="#0f172a"/>
+        <rect x="350" y="286" width="290" height="36" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="362" y="302" fill="white" font-size="10" font-weight="600">update_reference_in_journal_entry:669</text>
+        <text x="362" y="314" fill="#94a3b8" font-size="8">JV 明细行回写 reference_type / reference_name</text>
+
+        <rect x="350" y="360" width="290" height="50" rx="6" fill="#0f172a"/>
+        <rect x="350" y="360" width="290" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="362" y="376" fill="white" font-size="10" font-weight="600">update_reference_in_payment_entry:743</text>
+        <text x="362" y="388" fill="#94a3b8" font-size="8">→ get_advance_payment_doctypes:2643</text>
+        <text x="362" y="399" fill="#94a3b8" font-size="8">→ get_reconciliation_effect_date:824</text>
+
+        <rect x="350" y="448" width="290" height="36" rx="6" fill="#0f172a"/>
+        <rect x="350" y="448" width="290" height="36" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="362" y="464" fill="white" font-size="10" font-weight="600">_delete_pl_entries:1719</text>
+        <text x="362" y="476" fill="#94a3b8" font-size="8">_delete_adv_pl_entries:1724 · _delete_accounting_ledger_entries:1734</text>
+
+        <rect x="350" y="522" width="290" height="32" rx="6" fill="#0f172a"/>
+        <rect x="350" y="522" width="290" height="32" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="362" y="542" fill="white" font-size="10" font-weight="600">create_payment_ledger_entry:2151</text>
+
+        <rect x="350" y="592" width="290" height="32" rx="6" fill="#0f172a"/>
+        <rect x="350" y="592" width="290" height="32" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="362" y="612" fill="white" font-size="10" font-weight="600">update_voucher_outstanding:2175</text>
+
+        <rect x="350" y="662" width="290" height="62" rx="6" fill="#0f172a"/>
+        <rect x="350" y="662" width="290" height="62" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="362" y="678" fill="white" font-size="10" font-weight="600">class QueryPaymentLedger:2273</text>
+        <text x="362" y="690" fill="#94a3b8" font-size="8">__init__:2278 · reset:2292</text>
+        <text x="362" y="701" fill="#94a3b8" font-size="8">query_for_outstanding:2301（双 CTE 回算未结额）</text>
+        <text x="362" y="712" fill="#94a3b8" font-size="8">get_voucher_outstandings:2519</text>
+
+        <rect x="350" y="762" width="290" height="46" rx="6" fill="#0f172a"/>
+        <rect x="350" y="762" width="290" height="46" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="362" y="778" fill="white" font-size="10" font-weight="600">get_outstanding_invoices:1251</text>
+        <text x="362" y="790" fill="#94a3b8" font-size="8">→ get_held_invoices:1234（Hold 状态过滤）</text>
+        <text x="362" y="801" fill="#94a3b8" font-size="8">get_payment_ledger_entries:2024 → get_advance_ledger_entry:2122</text>
+
+        <rect x="350" y="846" width="290" height="62" rx="6" fill="#0f172a"/>
+        <rect x="350" y="846" width="290" height="62" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="362" y="862" fill="white" font-size="10" font-weight="600">汇兑损益凭证自动生成</text>
+        <text x="362" y="874" fill="#94a3b8" font-size="8">create_gain_loss_journal:2559 · get_linked_exchange_gain_loss_journal:897</text>
+        <text x="362" y="885" fill="#94a3b8" font-size="8">cancel_exchange_gain_loss_journal:847 · delete_…:872</text>
+        <text x="362" y="896" fill="#94a3b8" font-size="8">cancel_common_party_journal:924</text>
+
+        <rect x="350" y="946" width="290" height="62" rx="6" fill="#0f172a"/>
+        <rect x="350" y="946" width="290" height="62" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="362" y="962" fill="white" font-size="10" font-weight="600">解链（取消/删除时）</text>
+        <text x="362" y="974" fill="#94a3b8" font-size="8">unlink_ref_doc_from_payment_entries:1035</text>
+        <text x="362" y="985" fill="#94a3b8" font-size="8">→ remove_ref_doc_link_from_jv:1042 → convert_to_list:1077</text>
+        <text x="362" y="996" fill="#94a3b8" font-size="8">→ remove_ref_doc_link_from_pe:1084 · remove_ref_from_advance_section:1018</text>
+
+        <!-- C column -->
+        <rect x="670" y="60" width="300" height="30" rx="6" fill="#0f172a"/>
+        <rect x="670" y="60" width="300" height="30" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="682" y="79" fill="white" font-size="10" font-weight="600">party.get_party_details:77（whitelist）</text>
+
+        <rect x="670" y="128" width="300" height="32" rx="6" fill="#0f172a"/>
+        <rect x="670" y="128" width="300" height="32" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="682" y="148" fill="white" font-size="10" font-weight="600">_get_party_details:116 · validate_party_company:201</text>
+
+        <rect x="670" y="198" width="300" height="54" rx="6" fill="#0f172a"/>
+        <rect x="670" y="198" width="300" height="54" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="682" y="214" fill="white" font-size="10" font-weight="600">set_account_and_due_date:431</text>
+        <text x="682" y="226" fill="#94a3b8" font-size="8">→ get_party_account:450 → get_party_advance_account:527</text>
+        <text x="682" y="237" fill="#94a3b8" font-size="8">→ get_due_date:674 → get_payment_terms_template:830</text>
+        <text x="682" y="248" fill="#94a3b8" font-size="8">→ get_due_date_from_template:705</text>
+
+        <rect x="670" y="290" width="300" height="54" rx="6" fill="#0f172a"/>
+        <rect x="670" y="290" width="300" height="54" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="682" y="306" fill="white" font-size="10" font-weight="600">set_address_details:212 / set_contact_details:361</text>
+        <text x="682" y="318" fill="#94a3b8" font-size="8">→ render_address:1131 · get_party_shipping_address:994</text>
+        <text x="682" y="329" fill="#94a3b8" font-size="8">→ get_address_tax_category:763 · get_regional_address_details:320</text>
+        <text x="682" y="340" fill="#94a3b8" font-size="8">→ get_default_contact:1088 → complete_contact_details:324</text>
+
+        <rect x="670" y="382" width="300" height="46" rx="6" fill="#0f172a"/>
+        <rect x="670" y="382" width="300" height="46" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="682" y="398" fill="white" font-size="10" font-weight="600">set_other_values:378 · set_price_list:405 · set_taxes:780</text>
+        <text x="682" y="410" fill="#94a3b8" font-size="8">get_dashboard_info:891 · get_partywise_advanced_payment_amount:1028</text>
+        <text x="682" y="421" fill="#94a3b8" font-size="8">validate_party_currency_before_merging:1135</text>
+
+        <rect x="670" y="466" width="300" height="74" rx="6" fill="#0f172a"/>
+        <rect x="670" y="466" width="300" height="74" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="682" y="482" fill="white" font-size="10" font-weight="600">币种与冻结校验族</text>
+        <text x="682" y="494" fill="#94a3b8" font-size="8">get_party_account_currency:552 · get_party_gle_currency:560</text>
+        <text x="682" y="505" fill="#94a3b8" font-size="8">get_party_gle_account:584 · validate_party_gle_currency:608</text>
+        <text x="682" y="516" fill="#94a3b8" font-size="8">validate_party_accounts:629 · validate_due_date:726 → …_with_template:740</text>
+        <text x="682" y="527" fill="#94a3b8" font-size="8">validate_party_frozen_disabled:856 · validate_account_party_type:877</text>
+
+        <rect x="670" y="578" width="300" height="78" rx="6" fill="#0f172a"/>
+        <rect x="670" y="578" width="300" height="78" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="682" y="594" fill="white" font-size="10" font-weight="600">class TaxService:21（services/taxes.py）</text>
+        <text x="682" y="606" fill="#94a3b8" font-size="8">set_taxes:25 → is_pos_profile_changed:39 → append_taxes_from_master:65</text>
+        <text x="682" y="617" fill="#94a3b8" font-size="8">→ get_taxes_and_charges:205 · set_taxes_and_charges:48</text>
+        <text x="682" y="628" fill="#94a3b8" font-size="8">append_taxes_from_item_tax_template:72 → get_tax_row:100</text>
+        <text x="682" y="639" fill="#94a3b8" font-size="8">get_tax_map:129 · get_amount_and_base_amount:136 · get_tax_amounts:162</text>
+        <text x="682" y="650" fill="#94a3b8" font-size="8">validate_enabled_taxes_and_charges:109 · validate_tax_account_company:117</text>
+
+        <rect x="670" y="694" width="300" height="58" rx="6" fill="#0f172a"/>
+        <rect x="670" y="694" width="300" height="58" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="682" y="710" fill="white" font-size="10" font-weight="600">taxes 模块级方法</text>
+        <text x="682" y="722" fill="#94a3b8" font-size="8">get_tax_rate:180 · get_default_taxes_and_charges:185 · validate_conversion_rate:225</text>
+        <text x="682" y="733" fill="#94a3b8" font-size="8">validate_taxes_and_charges:239 → validate_account_head:264 / validate_cost_center:283</text>
+        <text x="682" y="744" fill="#94a3b8" font-size="8">validate_inclusive_tax:298 · set_child_tax_template_and_map:351 · merge_taxes:406</text>
+
+        <rect x="670" y="790" width="300" height="70" rx="6" fill="#0f172a"/>
+        <rect x="670" y="790" width="300" height="70" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="682" y="806" fill="white" font-size="10" font-weight="600">services/advances.py · set_advances:27</text>
+        <text x="682" y="818" fill="#94a3b8" font-size="8">→ get_advance_entries:62 → get_advance_journal_entries:317</text>
+        <text x="682" y="829" fill="#94a3b8" font-size="8">→ get_advance_payment_entries_for_regional:374 → …_entries:379 → get_common_query:423</text>
+        <text x="682" y="840" fill="#94a3b8" font-size="8">validate_advance_entries:107 · set_advance_gain_or_loss:128</text>
+        <text x="682" y="851" fill="#94a3b8" font-size="8">set_total_advance_paid:162 → set_advance_payment_status:177 · delink_advance_entries:209</text>
+
+        <rect x="670" y="898" width="300" height="82" rx="6" fill="#0f172a"/>
+        <rect x="670" y="898" width="300" height="82" rx="6" fill="rgba(124, 45, 18, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="682" y="914" fill="white" font-size="10" font-weight="600">异步/批量：递延收入 + 批量付款</text>
+        <text x="682" y="926" fill="#94a3b8" font-size="8">process_deferred_accounting:487（monthly_long hooks:532）</text>
+        <text x="682" y="937" fill="#94a3b8" font-size="8">→ convert_deferred_revenue_to_income:112 / …expense:74 → build_conditions:56</text>
+        <text x="682" y="948" fill="#94a3b8" font-size="8">→ book_deferred_income_or_expense:373 → _book_deferred_revenue_or_expense:378</text>
+        <text x="682" y="959" fill="#94a3b8" font-size="8">→ get_booking_dates:149 / calculate_amount:280 → get_already_booked_amount:306</text>
+        <text x="682" y="970" fill="#94a3b8" font-size="8">bulk_payment.create_payment_entries:12 → _create_payment_entry:114（savepoint）</text>
+
+        <text x="30" y="1030" fill="#94a3b8" font-size="8">重过账：update_gl_entries_after:1656 → get_future_stock_vouchers:1772 → repost_gle_for_stock_vouchers:1668 → sort_stock_vouchers_by_posting_date:1742 → compare_existing_and_expected_gle:1843</text>
+        <text x="30" y="1043" fill="#94a3b8" font-size="8">余额查询：get_balance_on:204 · get_count_on:358 · get_account_balances:1387 · get_children:1352 · 健康检查 run_ledger_health_checks:2656 · sync_auto_reconcile_config:2697</text>
+
+        <text x="30" y="1075" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="90" y="1066" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="112" y="1074" fill="#94a3b8" font-size="8">入口方法</text>
+        <rect x="190" y="1066" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="212" y="1074" fill="#94a3b8" font-size="8">业务方法</text>
+        <rect x="290" y="1066" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="312" y="1074" fill="#94a3b8" font-size="8">账簿写入</text>
+        <rect x="390" y="1066" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="412" y="1074" fill="#94a3b8" font-size="8">自动创建</text>
+        <rect x="490" y="1066" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="512" y="1074" fill="#94a3b8" font-size="8">校验/异常</text>
+        <rect x="595" y="1066" width="16" height="10" rx="2" fill="rgba(124, 45, 18, 0.4)" stroke="#fb923c" stroke-width="1"/>
+        <text x="617" y="1074" fill="#94a3b8" font-size="8">定时/异步</text>
+      </svg>
+    </div>
+    <div class="section-title"><span class="idx">04</span><h2>Controllers 与状态流转 · status_updater.py</h2><p>status_map 声明式状态机 → set_status/get_status 反射 · update_prevdoc_status → validate_qty / update_qty</p></div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 1000">
+        <defs>
+          <marker id="ah" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/></marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- arrows first -->
+        <line x1="200" y1="176" x2="200" y2="214" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="200" y1="272" x2="200" y2="310" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="200" y1="368" x2="200" y2="406" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="200" y1="440" x2="200" y2="478" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <line x1="620" y1="110" x2="620" y2="148" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="500" y1="196" x2="410" y2="234" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="740" y1="196" x2="830" y2="234" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="410" y1="330" x2="410" y2="368" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="830" y1="306" x2="830" y2="344" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="830" y1="402" x2="830" y2="440" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="830" y1="498" x2="830" y2="536" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="410" y1="426" x2="410" y2="464" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <line x1="200" y1="560" x2="200" y2="598" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="200" y1="668" x2="200" y2="706" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="200" y1="764" x2="200" y2="802" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <line x1="620" y1="620" x2="620" y2="658" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="620" y1="728" x2="620" y2="766" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <text x="30" y="44" fill="#22d3ee" font-size="10" font-weight="600">A · 状态机 status_map → set_status</text>
+        <text x="420" y="44" fill="#22d3ee" font-size="10" font-weight="600">B · 上游单据数量回写 update_prevdoc_status</text>
+
+        <!-- A: status machine -->
+        <rect x="30" y="60" width="340" height="116" rx="6" fill="#0f172a"/>
+        <rect x="30" y="60" width="340" height="116" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="42" y="76" fill="white" font-size="10" font-weight="600">status_map:21-179（声明式状态机字典）</text>
+        <text x="42" y="90" fill="#94a3b8" font-size="8">Lead:22 · Opportunity:28 · Quotation:35</text>
+        <text x="42" y="101" fill="#94a3b8" font-size="8">Sales Order:43 · Purchase Order:69</text>
+        <text x="42" y="112" fill="#94a3b8" font-size="8">Delivery Note:93 · Purchase Receipt:103</text>
+        <text x="42" y="123" fill="#94a3b8" font-size="8">Material Request:116 · POS Opening Entry:150</text>
+        <text x="42" y="134" fill="#94a3b8" font-size="8">POS Closing Entry:156 · Transaction Deletion Record:163</text>
+        <text x="42" y="145" fill="#94a3b8" font-size="8">Pick List:167</text>
+        <text x="42" y="160" fill="#94a3b8" font-size="8">每项 = [状态名, eval 条件 / 命名谓词方法名]</text>
+        <text x="42" y="171" fill="#94a3b8" font-size="8">validate_status:16 · OverAllowanceError:12</text>
+
+        <rect x="30" y="216" width="340" height="56" rx="6" fill="#0f172a"/>
+        <rect x="30" y="216" width="340" height="56" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="232" fill="white" font-size="10" font-weight="600">class StatusUpdater:182 · set_status:198</text>
+        <text x="42" y="244" fill="#94a3b8" font-size="8">入口：各 DocType 的 validate / on_submit / on_cancel</text>
+        <text x="42" y="255" fill="#94a3b8" font-size="8">on_discard:190（丢弃草稿时置状态）</text>
+        <text x="42" y="266" fill="#94a3b8" font-size="8">→ get_status:219</text>
+
+        <rect x="30" y="312" width="340" height="56" rx="6" fill="#0f172a"/>
+        <rect x="30" y="312" width="340" height="56" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="328" fill="white" font-size="10" font-weight="600">get_status:219（反射匹配）</text>
+        <text x="42" y="340" fill="#94a3b8" font-size="8">sl.reverse() 倒序遍历状态列表，取首个命中</text>
+        <text x="42" y="351" fill="#94a3b8" font-size="8">条件为字符串 → frappe.safe_eval(self)</text>
+        <text x="42" y="362" fill="#94a3b8" font-size="8">条件为方法名 → getattr(self, name)() 调用谓词</text>
+
+        <rect x="30" y="408" width="340" height="32" rx="6" fill="#0f172a"/>
+        <rect x="30" y="408" width="340" height="32" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="42" y="428" fill="white" font-size="10" font-weight="600">db_set("status") → 落库</text>
+
+        <rect x="30" y="480" width="340" height="80" rx="6" fill="#0f172a"/>
+        <rect x="30" y="480" width="340" height="80" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="496" fill="white" font-size="10" font-weight="600">开票状态百分比链</text>
+        <text x="42" y="508" fill="#94a3b8" font-size="8">_update_percent_field_in_targets:642</text>
+        <text x="42" y="519" fill="#94a3b8" font-size="8">→ _update_percent_field:659</text>
+        <text x="42" y="530" fill="#94a3b8" font-size="8">→ _calculate_target_parent_percentage:606</text>
+        <text x="42" y="541" fill="#94a3b8" font-size="8">→ _determine_status:633（&lt;0.001 Not / ≥99.999999 Fully / 否则 Partly）</text>
+        <text x="42" y="552" fill="#94a3b8" font-size="8">update_billing_status_for_zero_amount_refdoc:698 → update_billing_status:714</text>
+
+        <!-- B: prevdoc qty -->
+        <rect x="420" y="60" width="550" height="50" rx="6" fill="#0f172a"/>
+        <rect x="420" y="60" width="550" height="50" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="432" y="76" fill="white" font-size="10" font-weight="600">update_prevdoc_status:194</text>
+        <text x="432" y="88" fill="#94a3b8" font-size="8">调用者：Delivery Note / Purchase Receipt / Sales Invoice / Stock Entry 的 on_submit / on_cancel</text>
+        <text x="432" y="99" fill="#94a3b8" font-size="8">对每条 status_updater 配置项执行「校验 + 回写」两步</text>
+
+        <rect x="420" y="150" width="550" height="46" rx="6" fill="#0f172a"/>
+        <rect x="420" y="150" width="550" height="46" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="432" y="166" fill="white" font-size="10" font-weight="600">status_updater 配置：source_dt / target_dt / target_field / join_field</text>
+        <text x="432" y="178" fill="#94a3b8" font-size="8">左分支 → validate_qty:266（超量校验）</text>
+        <text x="432" y="189" fill="#94a3b8" font-size="8">右分支 → update_qty:534（数量回写）</text>
+
+        <rect x="240" y="236" width="340" height="94" rx="6" fill="#0f172a"/>
+        <rect x="240" y="236" width="340" height="94" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="252" y="252" fill="white" font-size="10" font-weight="600">validate_qty:266</text>
+        <text x="252" y="264" fill="#94a3b8" font-size="8">→ fetch_items_with_pending_qty:386（拉取上游待处理量）</text>
+        <text x="252" y="275" fill="#94a3b8" font-size="8">→ check_overflow_with_allowance:419</text>
+        <text x="252" y="286" fill="#94a3b8" font-size="8">　　→ get_allowance_for:750（读 Item / Stock Settings 容差）</text>
+        <text x="252" y="297" fill="#94a3b8" font-size="8">超出容差 → limits_crossed_error:469（OverAllowanceError）</text>
+        <text x="252" y="308" fill="#94a3b8" font-size="8">有绕过角色 → warn_about_bypassing_with_role:517（msgprint 警告）</text>
+        <text x="252" y="322" fill="#94a3b8" font-size="8">校验对象：数量 / 金额（qty · amount · 双精度容差）</text>
+
+        <rect x="240" y="372" width="340" height="54" rx="6" fill="#0f172a"/>
+        <rect x="240" y="372" width="340" height="54" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="252" y="388" fill="white" font-size="10" font-weight="600">hooks 层前置校验</text>
+        <text x="252" y="400" fill="#94a3b8" font-size="8">pre_submit_validation_doctypes:360 → accounts.utils.pre_submit_validation</text>
+        <text x="252" y="411" fill="#94a3b8" font-size="8">period_closing_doctypes:339（19 项）→ validate_accounting_period_on_doc_save</text>
+        <text x="252" y="422" fill="#94a3b8" font-size="8">queries.get_doctypes_for_closing:1096 读取同一 hook</text>
+
+        <rect x="240" y="466" width="340" height="66" rx="6" fill="#0f172a"/>
+        <rect x="240" y="466" width="340" height="66" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="252" y="482" fill="white" font-size="10" font-weight="600">controllers/draft_links.py</text>
+        <text x="252" y="494" fill="#94a3b8" font-size="8">class DraftLinkFinder:7 · find:16</text>
+        <text x="252" y="505" fill="#94a3b8" font-size="8">→ _link_filters:27 / _child_metas:33</text>
+        <text x="252" y="516" fill="#94a3b8" font-size="8">→ _dynamic_link_field_filters:41 / _draft_filter:49</text>
+        <text x="252" y="527" fill="#94a3b8" font-size="8">get_existing_drafts:54（提交前提示存在草稿引用）</text>
+
+        <rect x="660" y="236" width="310" height="70" rx="6" fill="#0f172a"/>
+        <rect x="660" y="236" width="310" height="70" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="672" y="252" fill="white" font-size="10" font-weight="600">update_qty:534</text>
+        <text x="672" y="264" fill="#94a3b8" font-size="8">→ _update_children:551</text>
+        <text x="672" y="275" fill="#94a3b8" font-size="8">　按 target_ref_field 汇总 source 行数量</text>
+        <text x="672" y="286" fill="#94a3b8" font-size="8">　UPDATE 上游明细行 target_field</text>
+        <text x="672" y="297" fill="#94a3b8" font-size="8">→ _update_modified:689（同步 modified 时间戳）</text>
+
+        <rect x="660" y="346" width="310" height="56" rx="6" fill="#0f172a"/>
+        <rect x="660" y="346" width="310" height="56" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="672" y="362" fill="white" font-size="10" font-weight="600">回写后再次 set_status:198</text>
+        <text x="672" y="374" fill="#94a3b8" font-size="8">上游单据状态随数量变化重算</text>
+        <text x="672" y="385" fill="#94a3b8" font-size="8">Sales Order → To Deliver / To Bill / Completed</text>
+        <text x="672" y="396" fill="#94a3b8" font-size="8">Material Request → Partially Ordered / Ordered</text>
+
+        <rect x="660" y="442" width="310" height="56" rx="6" fill="#0f172a"/>
+        <rect x="660" y="442" width="310" height="56" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="672" y="458" fill="white" font-size="10" font-weight="600">Stock Entry 专用（hooks:385）</text>
+        <text x="672" y="470" fill="#94a3b8" font-size="8">on_submit / on_cancel</text>
+        <text x="672" y="481" fill="#94a3b8" font-size="8">→ update_completed_and_requested_qty</text>
+        <text x="672" y="492" fill="#94a3b8" font-size="8">（Material Request 完成量 + 请求量同步）</text>
+
+        <rect x="660" y="538" width="310" height="76" rx="6" fill="#0f172a"/>
+        <rect x="660" y="538" width="310" height="76" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="672" y="554" fill="white" font-size="10" font-weight="600">controllers/queries.py（Link 字段查询族）</text>
+        <text x="672" y="566" fill="#94a3b8" font-size="8">item_query:276 · party_query:217 · employee_query:37 · lead_query:122</text>
+        <text x="672" y="577" fill="#94a3b8" font-size="8">tax_account_query:178 · get_account_list:767 · warehouse_query:963</text>
+        <text x="672" y="588" fill="#94a3b8" font-size="8">get_income_account:825 · get_expense_account:926 · bom:447</text>
+        <text x="672" y="599" fill="#94a3b8" font-size="8">get_payment_terms_for_references:1173 · get_warehouse_address:1245</text>
+        <text x="672" y="610" fill="#94a3b8" font-size="8">get_batch_no:585 → get_empty_batches:602 / get_filterd_batches:621</text>
+
+        <!-- ledger preview -->
+        <rect x="30" y="600" width="340" height="68" rx="6" fill="#0f172a"/>
+        <rect x="30" y="600" width="340" height="68" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="42" y="616" fill="white" font-size="10" font-weight="600">controllers/ledger_preview.py（草稿预览）</text>
+        <text x="42" y="628" fill="#94a3b8" font-size="8">入口 stock_controller.py:618 / :634</text>
+        <text x="42" y="639" fill="#94a3b8" font-size="8">get_accounting_ledger_preview:17</text>
+        <text x="42" y="650" fill="#94a3b8" font-size="8">get_stock_ledger_preview:55 → get_sl_entries_for_preview:103</text>
+        <text x="42" y="661" fill="#94a3b8" font-size="8">→ get_gl_entries_for_preview:121</text>
+
+        <rect x="30" y="708" width="340" height="56" rx="6" fill="#0f172a"/>
+        <rect x="30" y="708" width="340" height="56" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="42" y="724" fill="white" font-size="10" font-weight="600">savepoint "ledger_preview" 事务沙箱</text>
+        <text x="42" y="736" fill="#94a3b8" font-size="8">savepoint → docstatus=1 → update_stock_ledger()</text>
+        <text x="42" y="747" fill="#94a3b8" font-size="8">→ make_gl_entries() → 读取生成结果</text>
+        <text x="42" y="758" fill="#94a3b8" font-size="8">finally: rollback(save_point) 全部撤销，不落库</text>
+
+        <rect x="30" y="804" width="340" height="80" rx="6" fill="#0f172a"/>
+        <rect x="30" y="804" width="340" height="80" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="42" y="820" fill="white" font-size="10" font-weight="600">controllers/item_variant.py（变体自动生成）</text>
+        <text x="42" y="832" fill="#94a3b8" font-size="8">get_variant:29 → validate_item_variant_attributes:90 → validate_is_incremental:112</text>
+        <text x="42" y="843" fill="#94a3b8" font-size="8">→ find_variant:297 / create_variant:320 → copy_attributes_to_variant:448</text>
+        <text x="42" y="854" fill="#94a3b8" font-size="8">→ make_variant_item_code:500 · update_variant_attribute_values:157</text>
+        <text x="42" y="865" fill="#94a3b8" font-size="8">enqueue_multiple_variant_creation:346（≥600 抛错 · &lt;10 同步 · 否则入队）</text>
+        <text x="42" y="876" fill="#94a3b8" font-size="8">→ create_multiple_variants:374 → generate_keyed_value_combinations:393 · rename_variant_item_code:228</text>
+
+        <rect x="420" y="660" width="220" height="68" rx="6" fill="#0f172a"/>
+        <rect x="420" y="660" width="220" height="68" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="432" y="676" fill="white" font-size="10" font-weight="600">print_settings.py</text>
+        <text x="432" y="688" fill="#94a3b8" font-size="8">由 accounts_controller.py:558-559 直调</text>
+        <text x="432" y="699" fill="#94a3b8" font-size="8">set_print_templates_for_item_table:5</text>
+        <text x="432" y="710" fill="#94a3b8" font-size="8">set_print_templates_for_taxes:32</text>
+        <text x="432" y="721" fill="#94a3b8" font-size="8">→ format_columns:48</text>
+
+        <rect x="420" y="768" width="220" height="46" rx="6" fill="#0f172a"/>
+        <rect x="420" y="768" width="220" height="46" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="432" y="784" fill="white" font-size="10" font-weight="600">controllers/trends.py</text>
+        <text x="432" y="796" fill="#94a3b8" font-size="8">趋势类报表通用取数（643 行）</text>
+        <text x="432" y="807" fill="#94a3b8" font-size="8">按期间/维度透视销售与采购数据</text>
+
+        <rect x="660" y="644" width="310" height="170" rx="6" fill="#0f172a"/>
+        <rect x="660" y="644" width="310" height="170" rx="6" fill="rgba(124, 45, 18, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="672" y="662" fill="white" font-size="10" font-weight="600">scheduler_events（hooks.py:468-536）</text>
+        <text x="672" y="676" fill="#94a3b8" font-size="8">cron 0/15:470 → resume_bom_cost_update_jobs</text>
+        <text x="672" y="687" fill="#94a3b8" font-size="8">　　　　　　　　 run_parallel_reposting</text>
+        <text x="672" y="698" fill="#94a3b8" font-size="8">30 * * * *:475 → rename_gle_sle_docs</text>
+        <text x="672" y="709" fill="#94a3b8" font-size="8">hourly:481 → hourly_reminder</text>
+        <text x="672" y="720" fill="#94a3b8" font-size="8">hourly_maintenance:485-494（8 项，含 repost_entries）</text>
+        <text x="672" y="731" fill="#94a3b8" font-size="8">daily_maintenance:497-527（29 项）：</text>
+        <text x="672" y="742" fill="#94a3b8" font-size="8">　update_invoice_status:500 · set_tasks_as_overdue:502</text>
+        <text x="672" y="753" fill="#94a3b8" font-size="8">　reorder_item:521 · post_depreciation_entries:526</text>
+        <text x="672" y="764" fill="#94a3b8" font-size="8">weekly:528 · monthly_long:532 → process_deferred_accounting</text>
+        <text x="672" y="778" fill="#94a3b8" font-size="8">auto_cancel_exempted_doctypes:453-466</text>
+        <text x="672" y="789" fill="#94a3b8" font-size="8">（级联取消豁免清单）</text>
+        <text x="672" y="803" fill="#94a3b8" font-size="8">REPOST_LOCK_TIMEOUT = 300（并发锁超时）</text>
+
+        <text x="30" y="925" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="90" y="916" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="112" y="924" fill="#94a3b8" font-size="8">入口方法</text>
+        <rect x="190" y="916" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="212" y="924" fill="#94a3b8" font-size="8">业务方法</text>
+        <rect x="290" y="916" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="312" y="924" fill="#94a3b8" font-size="8">数据回写</text>
+        <rect x="390" y="916" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="412" y="924" fill="#94a3b8" font-size="8">自动创建</text>
+        <rect x="490" y="916" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="512" y="924" fill="#94a3b8" font-size="8">校验/异常</text>
+        <rect x="595" y="916" width="16" height="10" rx="2" fill="rgba(124, 45, 18, 0.4)" stroke="#fb923c" stroke-width="1"/>
+        <text x="617" y="924" fill="#94a3b8" font-size="8">定时/异步</text>
+      </svg>
+    </div>
+    <div class="section-title"><span class="idx">05</span><h2>CRM / 项目 / 资产域 · 生命周期钩子与方法链</h2><p>lead.py 钩子链 → mapper 单据转换 · task.py 递归依赖校验 · asset.py 校验与折旧</p></div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 1120">
+        <defs>
+          <marker id="ah" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/></marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- arrows first -->
+        <line x1="180" y1="98" x2="180" y2="136" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="212" x2="180" y2="250" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="292" x2="180" y2="330" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="372" x2="180" y2="410" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="464" x2="180" y2="502" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="556" x2="180" y2="594" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="648" x2="180" y2="686" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="180" y1="762" x2="180" y2="800" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <line x1="530" y1="98" x2="530" y2="136" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="530" y1="236" x2="530" y2="274" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="530" y1="368" x2="530" y2="406" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="530" y1="482" x2="530" y2="520" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="530" y1="574" x2="530" y2="612" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="530" y1="666" x2="530" y2="704" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <line x1="850" y1="98" x2="850" y2="136" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="850" y1="244" x2="850" y2="282" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="850" y1="368" x2="850" y2="406" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="850" y1="470" x2="850" y2="508" stroke="#34d399" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="850" y1="584" x2="850" y2="622" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="850" y1="688" x2="850" y2="726" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="850" y1="802" x2="850" y2="840" stroke="#fb7185" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="850" y1="916" x2="850" y2="954" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <text x="30" y="44" fill="#22d3ee" font-size="10" font-weight="600">A · CRM Lead 生命周期 crm/doctype/lead/lead.py</text>
+        <text x="360" y="44" fill="#22d3ee" font-size="10" font-weight="600">B · 项目任务 projects/doctype/task/task.py</text>
+        <text x="700" y="44" fill="#22d3ee" font-size="10" font-weight="600">C · 固定资产 assets/doctype/asset/asset.py</text>
+
+        <!-- A: Lead -->
+        <rect x="30" y="60" width="300" height="38" rx="6" fill="#0f172a"/>
+        <rect x="30" y="60" width="300" height="38" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="42" y="76" fill="white" font-size="10" font-weight="600">class Lead(SellingController, CRMNote):20</text>
+        <text x="42" y="90" fill="#94a3b8" font-size="8">Frappe 钩子入口：validate / before_insert / after_insert / on_update / on_trash</text>
+
+        <rect x="30" y="138" width="300" height="74" rx="6" fill="#0f172a"/>
+        <rect x="30" y="138" width="300" height="74" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="154" fill="white" font-size="10" font-weight="600">validate:93</text>
+        <text x="42" y="166" fill="#94a3b8" font-size="8">→ set_full_name:130 → set_lead_name:136</text>
+        <text x="42" y="177" fill="#94a3b8" font-size="8">→ set_title:146</text>
+        <text x="42" y="188" fill="#94a3b8" font-size="8">→ set_status()（StatusUpdater · status_map Lead:22）</text>
+        <text x="42" y="199" fill="#94a3b8" font-size="8">→ check_email_id_is_unique:149 → validate_email_id:168</text>
+        <text x="42" y="210" fill="#94a3b8" font-size="8">状态谓词：has_customer:223 / has_opportunity:226 / has_quotation:229 / has_lost_quotation:234</text>
+
+        <rect x="30" y="252" width="300" height="40" rx="6" fill="#0f172a"/>
+        <rect x="30" y="252" width="300" height="40" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="42" y="268" fill="white" font-size="10" font-weight="600">before_insert:101 → create_contact:246</text>
+        <text x="42" y="280" fill="#94a3b8" font-size="8">→ create_prospect_and_contact:238（自动建 Prospect + Contact）</text>
+        <text x="42" y="290" fill="#94a3b8" font-size="8">邮箱重复即报错，阻止插入</text>
+
+        <rect x="30" y="332" width="300" height="40" rx="6" fill="#0f172a"/>
+        <rect x="30" y="332" width="300" height="40" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="42" y="348" fill="white" font-size="10" font-weight="600">after_insert:119 → link_to_contact:176</text>
+        <text x="42" y="360" fill="#94a3b8" font-size="8">建立 Dynamic Link（Contact ↔ Lead）</text>
+        <text x="42" y="370" fill="#94a3b8" font-size="8">on_update:122 → update_prospect:184</text>
+
+        <rect x="30" y="412" width="300" height="52" rx="6" fill="#0f172a"/>
+        <rect x="30" y="412" width="300" height="52" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="42" y="428" fill="white" font-size="10" font-weight="600">on_trash:125 → remove_link_from_prospect:199</text>
+        <text x="42" y="440" fill="#94a3b8" font-size="8">→ get_linked_prospects:216</text>
+        <text x="42" y="451" fill="#94a3b8" font-size="8">从 Prospect 子表移除该 Lead 行</text>
+        <text x="42" y="462" fill="#94a3b8" font-size="8">Prospect 无剩余 Lead 则清理引用</text>
+
+        <rect x="30" y="504" width="300" height="52" rx="6" fill="#0f172a"/>
+        <rect x="30" y="504" width="300" height="52" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="42" y="520" fill="white" font-size="10" font-weight="600">lead/mapper.py（get_mapped_doc 单据转换）</text>
+        <text x="42" y="532" fill="#94a3b8" font-size="8">make_customer:14 → _make_customer:18</text>
+        <text x="42" y="543" fill="#94a3b8" font-size="8">make_opportunity:63 · make_quotation:93 → _set_missing_values:141</text>
+        <text x="42" y="554" fill="#94a3b8" font-size="8">make_lead_from_communication:114（邮件转线索）</text>
+
+        <rect x="30" y="596" width="300" height="52" rx="6" fill="#0f172a"/>
+        <rect x="30" y="596" width="300" height="52" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="42" y="612" fill="white" font-size="10" font-weight="600">模块级方法</text>
+        <text x="42" y="624" fill="#94a3b8" font-size="8">get_lead_details:319（表单取数）</text>
+        <text x="42" y="635" fill="#94a3b8" font-size="8">add_lead_to_prospect:384</text>
+        <text x="42" y="646" fill="#94a3b8" font-size="8">→ copy_comments / link_communications / link_open_events</text>
+
+        <rect x="30" y="688" width="300" height="74" rx="6" fill="#0f172a"/>
+        <rect x="30" y="688" width="300" height="74" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="42" y="704" fill="white" font-size="10" font-weight="600">crm/utils.py（跨对象活动迁移）</text>
+        <text x="42" y="716" fill="#94a3b8" font-size="8">copy_comments:39 · link_communications:53 → get_linked_communication_list:61</text>
+        <text x="42" y="727" fill="#94a3b8" font-size="8">link_communications_with_prospect:74 → get_linked_prospect:106</text>
+        <text x="42" y="738" fill="#94a3b8" font-size="8">link_events_with_prospect:123 · link_open_tasks:133 · link_open_events:143</text>
+        <text x="42" y="749" fill="#94a3b8" font-size="8">get_open_activities:152 · open_leads_opportunities_based_on_todays_event:229</text>
+        <text x="42" y="760" fill="#94a3b8" font-size="8">class CRMNote:250 → add_note:252 / edit_note:258 / delete_note:265</text>
+
+        <rect x="30" y="802" width="300" height="64" rx="6" fill="#0f172a"/>
+        <rect x="30" y="802" width="300" height="64" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="42" y="818" fill="white" font-size="10" font-weight="600">crm/frappe_crm_api.py（外部 CRM 同步）</text>
+        <text x="42" y="830" fill="#94a3b8" font-size="8">create_prospect_against_crm_deal:9 → validate_frappe_crm_sync:182</text>
+        <text x="42" y="841" fill="#94a3b8" font-size="8">→ create_contacts:44 → contact_exists:117 / link_doc:107</text>
+        <text x="42" y="852" fill="#94a3b8" font-size="8">→ create_address:71</text>
+        <text x="42" y="863" fill="#94a3b8" font-size="8">create_customer:143（savepoint "crm_customer_links"）· is_crm_installed:204</text>
+
+        <!-- B: Task -->
+        <rect x="360" y="60" width="320" height="38" rx="6" fill="#0f172a"/>
+        <rect x="360" y="60" width="320" height="38" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="372" y="76" fill="white" font-size="10" font-weight="600">class Task(NestedSet):26</text>
+        <text x="372" y="90" fill="#94a3b8" font-size="8">树形结构（lft/rgt），依赖关系存 depends_on 子表</text>
+
+        <rect x="360" y="138" width="320" height="98" rx="6" fill="#0f172a"/>
+        <rect x="360" y="138" width="320" height="98" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="372" y="154" fill="white" font-size="10" font-weight="600">validate:84</text>
+        <text x="372" y="166" fill="#94a3b8" font-size="8">→ validate_dates:95</text>
+        <text x="372" y="177" fill="#94a3b8" font-size="8">　→ validate_parent_expected_end_date:105</text>
+        <text x="372" y="188" fill="#94a3b8" font-size="8">　→ validate_parent_project_dates:121</text>
+        <text x="372" y="199" fill="#94a3b8" font-size="8">→ validate_status:155 · validate_progress:171</text>
+        <text x="372" y="210" fill="#94a3b8" font-size="8">→ validate_dependencies_for_template_task:178</text>
+        <text x="372" y="221" fill="#94a3b8" font-size="8">→ validate_depends_on_tasks:192 · validate_completed_on:202</text>
+        <text x="372" y="232" fill="#94a3b8" font-size="8">→ validate_parent_is_group:206 · update_depends_on:216</text>
+
+        <rect x="360" y="276" width="320" height="92" rx="6" fill="#0f172a"/>
+        <rect x="360" y="276" width="320" height="92" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="372" y="292" fill="white" font-size="10" font-weight="600">on_update:226</text>
+        <text x="372" y="304" fill="#94a3b8" font-size="8">→ check_recursion:265</text>
+        <text x="372" y="315" fill="#94a3b8" font-size="8">　→ _reaches_self:276（递归 CTE 探测依赖环）</text>
+        <text x="372" y="326" fill="#94a3b8" font-size="8">　成环则抛错，阻止保存</text>
+        <text x="372" y="337" fill="#94a3b8" font-size="8">→ reschedule_dependent_tasks:295（顺延下游任务日期）</text>
+        <text x="372" y="348" fill="#94a3b8" font-size="8">→ update_project:261（回写项目完成度）</text>
+        <text x="372" y="359" fill="#94a3b8" font-size="8">→ unassign_todo:234（关闭 ToDo 分派）</text>
+
+        <rect x="360" y="408" width="320" height="74" rx="6" fill="#0f172a"/>
+        <rect x="360" y="408" width="320" height="74" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="372" y="424" fill="white" font-size="10" font-weight="600">on_trash:359 → check_if_child_exists:378</text>
+        <text x="372" y="436" fill="#94a3b8" font-size="8">存在子任务则禁止删除</text>
+        <text x="372" y="447" fill="#94a3b8" font-size="8">NestedSet 同步 lft / rgt 区间</text>
+        <text x="372" y="458" fill="#94a3b8" font-size="8">get_children:458（树视图懒加载）</text>
+        <text x="372" y="469" fill="#94a3b8" font-size="8">add_multiple_tasks:506（批量建任务）</text>
+        <text x="372" y="480" fill="#94a3b8" font-size="8">make_timesheet:430（任务 → 工时单）</text>
+
+        <rect x="360" y="522" width="320" height="52" rx="6" fill="#0f172a"/>
+        <rect x="360" y="522" width="320" height="52" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="372" y="538" fill="white" font-size="10" font-weight="600">项目进度联动</text>
+        <text x="372" y="550" fill="#94a3b8" font-size="8">Task.progress / status → Project.percent_complete</text>
+        <text x="372" y="561" fill="#94a3b8" font-size="8">Timesheet → Task.actual_time · Project.total_costing_amount</text>
+        <text x="372" y="572" fill="#94a3b8" font-size="8">Project 成本汇总 → Sales Invoice 项目维度</text>
+
+        <rect x="360" y="614" width="320" height="52" rx="6" fill="#0f172a"/>
+        <rect x="360" y="614" width="320" height="52" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="372" y="630" fill="white" font-size="10" font-weight="600">依赖校验要点</text>
+        <text x="372" y="642" fill="#94a3b8" font-size="8">exp_start_date ≤ exp_end_date；不得超出父任务/项目区间</text>
+        <text x="372" y="653" fill="#94a3b8" font-size="8">Template Task 不允许指向非模板依赖</text>
+        <text x="372" y="664" fill="#94a3b8" font-size="8">completed_on 仅 status=Completed 时允许</text>
+
+        <rect x="360" y="706" width="320" height="52" rx="6" fill="#0f172a"/>
+        <rect x="360" y="706" width="320" height="52" rx="6" fill="rgba(124, 45, 18, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="372" y="722" fill="white" font-size="10" font-weight="600">set_tasks_as_overdue:416</text>
+        <text x="372" y="734" fill="#94a3b8" font-size="8">daily_maintenance（hooks.py:502）每日执行</text>
+        <text x="372" y="745" fill="#94a3b8" font-size="8">exp_end_date &lt; today 且未完成 → status=Overdue</text>
+        <text x="372" y="756" fill="#94a3b8" font-size="8">同时刷新 Project 状态</text>
+
+        <!-- C: Asset -->
+        <rect x="700" y="60" width="270" height="38" rx="6" fill="#0f172a"/>
+        <rect x="700" y="60" width="270" height="38" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="712" y="76" fill="white" font-size="10" font-weight="600">class Asset(AccountsController):41</text>
+        <text x="712" y="90" fill="#94a3b8" font-size="8">validate:122 → before_save:139 → before_submit:249 → on_submit:255</text>
+
+        <rect x="700" y="138" width="270" height="106" rx="6" fill="#0f172a"/>
+        <rect x="700" y="138" width="270" height="106" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="712" y="154" fill="white" font-size="10" font-weight="600">validate:122（校验族）</text>
+        <text x="712" y="166" fill="#94a3b8" font-size="8">→ validate_category:431 · validate_precision:445</text>
+        <text x="712" y="177" fill="#94a3b8" font-size="8">→ validate_linked_purchase_documents:499</text>
+        <text x="712" y="188" fill="#94a3b8" font-size="8">　→ validate_asset_qty_with_purchase_doc:521</text>
+        <text x="712" y="199" fill="#94a3b8" font-size="8">→ set_purchase_doc_row_item:295 → get_linked_item:314</text>
+        <text x="712" y="210" fill="#94a3b8" font-size="8">→ validate_asset_values:454 → is_cwip_accounting_enabled:1165</text>
+        <text x="712" y="221" fill="#94a3b8" font-size="8">→ validate_asset_and_reference:327 · validate_item:342</text>
+        <text x="712" y="232" fill="#94a3b8" font-size="8">→ validate_cost_center:355 · validate_in_use_date:384</text>
+        <text x="712" y="242" fill="#94a3b8" font-size="8">→ set_missing_values:397 · validate_gross_and_purchase_amount:564</text>
+
+        <rect x="700" y="284" width="270" height="84" rx="6" fill="#0f172a"/>
+        <rect x="700" y="284" width="270" height="84" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="712" y="300" fill="white" font-size="10" font-weight="600">财务账簿校验 validate_finance_books:408</text>
+        <text x="712" y="312" fill="#94a3b8" font-size="8">→ validate_asset_finance_books:612</text>
+        <text x="712" y="323" fill="#94a3b8" font-size="8">→ validate_opening_depreciation_values:637</text>
+        <text x="712" y="334" fill="#94a3b8" font-size="8">→ validate_total_number_of_depreciations_and_frequency:666</text>
+        <text x="712" y="345" fill="#94a3b8" font-size="8">→ validate_depreciation_start_date:675</text>
+        <text x="712" y="356" fill="#94a3b8" font-size="8">→ validate_expected_value_after_useful_life:705</text>
+        <text x="712" y="366" fill="#94a3b8" font-size="8">set_total_booked_depreciations:694</text>
+
+        <rect x="700" y="408" width="270" height="62" rx="6" fill="#0f172a"/>
+        <rect x="700" y="408" width="270" height="62" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="712" y="424" fill="white" font-size="10" font-weight="600">before_save:139 折旧计划自动生成</text>
+        <text x="712" y="436" fill="#94a3b8" font-size="8">→ create_asset_depreciation_schedule:143</text>
+        <text x="712" y="447" fill="#94a3b8" font-size="8">→ evaluate_and_recreate_depreciation_schedule:169</text>
+        <text x="712" y="458" fill="#94a3b8" font-size="8">　→ has_asset_details_changed:180 / has_depreciation_settings_changed:189</text>
+        <text x="712" y="468" fill="#94a3b8" font-size="8">　→ should_regenerate_depreciation_schedule:204 → show_schedule_creation_message:235</text>
+
+        <rect x="700" y="510" width="270" height="74" rx="6" fill="#0f172a"/>
+        <rect x="700" y="510" width="270" height="74" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="712" y="526" fill="white" font-size="10" font-weight="600">折旧率计算</text>
+        <text x="712" y="538" fill="#94a3b8" font-size="8">set_depreciation_rate:607 · set_depr_rate_and_value_after_depreciation:219</text>
+        <text x="712" y="549" fill="#94a3b8" font-size="8">get_depreciation_rate:1003</text>
+        <text x="712" y="560" fill="#94a3b8" font-size="8">→ get_double_declining_balance_rate:1013</text>
+        <text x="712" y="571" fill="#94a3b8" font-size="8">→ get_written_down_value_rate:1026</text>
+        <text x="712" y="581" fill="#94a3b8" font-size="8">get_value_after_depreciation:818 · get_default_finance_book_idx:831</text>
+
+        <rect x="700" y="624" width="270" height="64" rx="6" fill="#0f172a"/>
+        <rect x="700" y="624" width="270" height="64" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="712" y="640" fill="white" font-size="10" font-weight="600">on_submit:255 → 账务与移动</text>
+        <text x="712" y="652" fill="#94a3b8" font-size="8">→ validate_make_gl_entry:859 → get_purchase_document:900</text>
+        <text x="712" y="663" fill="#94a3b8" font-size="8">→ get_fixed_asset_account:908 / get_cwip_account:923</text>
+        <text x="712" y="674" fill="#94a3b8" font-size="8">→ make_gl_entries:936 → general_ledger.make_gl_entries:34</text>
+        <text x="712" y="685" fill="#94a3b8" font-size="8">→ make_asset_movement:576（Asset Movement 建档）</text>
+
+        <rect x="700" y="728" width="270" height="74" rx="6" fill="#0f172a"/>
+        <rect x="700" y="728" width="270" height="74" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="712" y="744" fill="white" font-size="10" font-weight="600">状态与生命周期</text>
+        <text x="712" y="756" fill="#94a3b8" font-size="8">set_status:779 → get_status:785（Draft / Submitted / Partially Depreciated</text>
+        <text x="712" y="767" fill="#94a3b8" font-size="8">　/ Fully Depreciated / Scrapped / Sold / Capitalized）</text>
+        <text x="712" y="778" fill="#94a3b8" font-size="8">on_update:244 · after_insert:283 · after_delete:292</text>
+        <text x="712" y="789" fill="#94a3b8" font-size="8">check_asset_capitalization_gl_entries:984 · has_active_capitalization:1182</text>
+
+        <rect x="700" y="842" width="270" height="74" rx="6" fill="#0f172a"/>
+        <rect x="700" y="842" width="270" height="74" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="712" y="858" fill="white" font-size="10" font-weight="600">on_cancel:270</text>
+        <text x="712" y="870" fill="#94a3b8" font-size="8">→ validate_cancellation:733</text>
+        <text x="712" y="881" fill="#94a3b8" font-size="8">→ cancel_movement_entries:743</text>
+        <text x="712" y="892" fill="#94a3b8" font-size="8">→ delete_depreciation_entries:760</text>
+        <text x="712" y="903" fill="#94a3b8" font-size="8">→ make_reverse_gl_entries / set_status("Cancelled")</text>
+        <text x="712" y="913" fill="#94a3b8" font-size="8">has_gl_entries:1054（判断是否已生成分录）</text>
+
+        <rect x="700" y="956" width="270" height="74" rx="6" fill="#0f172a"/>
+        <rect x="700" y="956" width="270" height="74" rx="6" fill="rgba(124, 45, 18, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="712" y="972" fill="white" font-size="10" font-weight="600">定时任务与工具方法</text>
+        <text x="712" y="984" fill="#94a3b8" font-size="8">post_depreciation_entries（daily hooks:526）</text>
+        <text x="712" y="995" fill="#94a3b8" font-size="8">make_post_gl_entry:1085 · update_maintenance_status:1070</text>
+        <text x="712" y="1006" fill="#94a3b8" font-size="8">get_item_details:1112 · get_asset_account:1139</text>
+        <text x="712" y="1017" fill="#94a3b8" font-size="8">get_asset_value_after_depreciation:1170 · get_values_from_purchase_doc:1190</text>
+        <text x="712" y="1027" fill="#94a3b8" font-size="8">get_asset_naming_series:1106 · get_manual_depreciation_entries:841</text>
+
+        <text x="30" y="905" fill="#94a3b8" font-size="8">跨域衔接：Lead → Opportunity → Quotation → Sales Order（status_updater 数量回写）→ Delivery Note（stock_ledger 台账）→ Sales Invoice（general_ledger 总账 + Payment Ledger）</text>
+        <text x="30" y="918" fill="#94a3b8" font-size="8">Purchase Order → Purchase Receipt（估值 + 台账）→ Purchase Invoice（总账）→ Asset（资产建档 + 折旧计划 + 折旧分录）；Project/Task 提供成本与工时维度</text>
+
+        <text x="30" y="1075" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="90" y="1066" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="112" y="1074" fill="#94a3b8" font-size="8">类/入口</text>
+        <rect x="190" y="1066" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="212" y="1074" fill="#94a3b8" font-size="8">业务方法</text>
+        <rect x="290" y="1066" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="312" y="1074" fill="#94a3b8" font-size="8">数据写入</text>
+        <rect x="390" y="1066" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="412" y="1074" fill="#94a3b8" font-size="8">自动创建</text>
+        <rect x="490" y="1066" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="512" y="1074" fill="#94a3b8" font-size="8">校验/取消</text>
+        <rect x="595" y="1066" width="16" height="10" rx="2" fill="rgba(124, 45, 18, 0.4)" stroke="#fb923c" stroke-width="1"/>
+        <text x="617" y="1074" fill="#94a3b8" font-size="8">定时/异步</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-dot dot-cyan"></div>
+        <h3>钩子编排入口</h3>
+        <p>hooks.py 的 doc_events 用 "*" 通配对全部 DocType 挂 validate 三钩子，再对 period_closing_doctypes（19 项）与 pre_submit_validation_doctypes（5 项）追加会计期间与提交前校验，形成统一的横切入口。</p>
+      </div>
+      <div class="card">
+        <div class="card-dot dot-emerald"></div>
+        <h3>库存台账主链</h3>
+        <p>make_sl_entries:129 → make_entry:282 → repost_current_voucher:202 → update_entries_after.build:741 → process_sle:1038，FIFO/LIFO 队列在 process_sle 内逐笔重算，最后 bin.update_qty_from_sle:261 回写库存余额。</p>
+      </div>
+      <div class="card">
+        <div class="card-dot dot-purple"></div>
+        <h3>总账与未结额</h3>
+        <p>make_gl_entries:34 → process_gl_map:141（成本中心分摊 + 同类合并）→ save_entries:359（借贷平衡 + 尾差处理）→ make_entry:377；未结金额由 QueryPaymentLedger.query_for_outstanding:2301 用双 CTE 回算。</p>
+      </div>
+      <div class="card">
+        <div class="card-dot dot-amber"></div>
+        <h3>声明式状态机</h3>
+        <p>status_map:21-179 把 12 个 DocType 的状态规则写成数据，get_status:219 倒序遍历并按类型分派 frappe.safe_eval 或 getattr 命名谓词，实现状态判定与业务代码解耦。</p>
+      </div>
+      <div class="card">
+        <div class="card-dot dot-rose"></div>
+        <h3>容差与超量控制</h3>
+        <p>update_prevdoc_status:194 先走 validate_qty:266 → check_overflow_with_allowance:419 → get_allowance_for:750，超限抛 OverAllowanceError，持特定角色时降级为 warn_about_bypassing_with_role:517。</p>
+      </div>
+      <div class="card">
+        <div class="card-dot dot-orange"></div>
+        <h3>异步重过账与容错</h3>
+        <p>run_parallel_reposting（cron 0/15）配合 items_to_be_repost / current_index / reposting_data_file 三要素支持断点续跑；ledger_preview 与 bulk_payment 用 frappe.db.savepoint 做局部回滚沙箱。</p>
+      </div>
+    </div>
+
+    <p class="footer">节点标注均为源码中的真实方法名与行号（相对各自文件），箭头表示实际调用或触发关系 · 源码根目录 /Users/shurun/Soft/workspace/rainy/erp-erpnext/erpnext</p>
+  </div>
+
+  <script>
+    async function copyAsImage(btn) {
+      const orig = btn.textContent;
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        btn.textContent = '✓ Copied!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPNG(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const link = document.createElement('a');
+        link.download = 'erpnext-business-flow.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPDF(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({ orientation, unit: 'px', format: [canvas.width, canvas.height], hotfixes: ['px_scaling'] });
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('erpnext-business-flow.pdf');
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+  </script>
+</body>
+</html>
