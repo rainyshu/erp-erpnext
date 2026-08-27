@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "visual-check",
+  "status": "fail",
+  "visualReview": "pending",
+  "artifact": {
+    "path": "/Users/shurun/Soft/workspace/rainy/erp-erpnext/erpnext/erpnext-business-sequence.html",
+    "sha256": "99c29a4d6565a508eeee36a928f206ecefd4d495c50de2a74f95edad0ef375e8",
+    "bytes": 715956
+  },
+  "state": {
+    "detail": "read",
+    "motion": "still"
+  },
+  "chrome": {
+    "status": "available",
+    "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  },
+  "containment": {
+    "status": "fail",
+    "viewports": []
+  },
+  "readability": {
+    "status": "fail",
+    "minimumProjectedNodeTextPx": 6,
+    "viewports": []
+  },
+  "viewerChrome": {
+    "status": "fail",
+    "viewports": []
+  },
+  "captures": {
+    "status": "fail",
+    "screenshots": [],
+    "contactSheet": null
+  },
+  "sidecars": {
+    "receipt": "erpnext-business-sequence.visual-check.json",
+    "contactSheet": "erpnext-business-sequence.visual-check.html"
+  },
+  "error": "Chrome DevTools process exit failed: Chrome closed with signal SIGTRAP\nChrome process: signal SIGTRAP.\nChrome stderr:\nsandbox initialization failed: Operation not permitted\nFailed to initialize sandbox.sandbox initialization failed: Operation not permitted\nFailed to initialize sandbox.[0827/131019.430681:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/028bc210-724a-4b00-afe3-6214a137074a.dmp: Operation not permitted (1)\nFailed to initialize sandbox.[0827/131019.449275:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/713c0900-0b64-4f65-96bd-12a28a6e20b1.dmp: Operation not permitted (1)\n[0827/131019.477118:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/9c5487dc-a6dc-424b-8581-e05d2b020d00.dmp: Operation not permitted (1)\nFailed to initialize sandbox.[0827/131019.567064:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/6ee0ce67-8566-449b-b3a4-7fbf8c1fcb63.dmp: Operation not permitted (1)\nFailed to initialize sandbox.Failed to initialize sandbox.Trying to load the allocator multiple times. This is *not* supported.\n[0827/131019.596826:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/1337aa50-c309-4c17-85c4-faf29a5d8a62.dmp: Operation not permitted (1)\n[0827/131019.608981:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/0ea42c95-e359-4c3e-ae41-106dff0e33ff.dmp: Operation not permitted (1)\n[87724:10723192:0827/131020.202033:ERROR:content/browser/gpu/gpu_process_host.cc:1035] GPU process exited unexpectedly: exit_code=6\nFailed to initialize sandbox.[87724:10723192:0827/131020.207816:ERROR:content/browser/network_service_instance_impl.cc:618] Network service crashed or was terminated, restarting service.\nFailed to initialize sandbox.Failed to initialize sandbox.sandbox initialization failed: Operation not permitted\nFailed to initialize sandbox.sandbox initialization failed: Operation not permitted\nFailed to initialize sandbox.[0827/131020.225297:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/e6c90ccf-5f49-436c-bf87-cf4b1b15db4e.dmp: Operation not permitted (1)\n[0827/131020.238666:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/9efa3c15-a76a-4d08-92be-ea28f90a5ccb.dmp: Operation not permitted (1)\n[0827/131020.254687:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/37a299ef-39c3-4821-86a2-6a199283533f.dmp: Operation not permitted (1)\n[0827/131020.266788:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/b6b8b99f-8ba4-4d51-9817-2f218ae84588.dmp: Operation not permitted (1)\n[0827/131020.280642:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/60a175c6-baf8-4a40-a33f-33e6e8689cee.dmp: Operation not permitted (1)\n[87724:10723192:0827/131020.353107:ERROR:content/browser/gpu/gpu_process_host.cc:1035] GPU process exited unexpectedly: exit_code=6\n[87724:10723192:0827/131020.362829:ERROR:content/browser/network_service_instance_impl.cc:618] Network service crashed or was terminated, restarting service.\nFailed to initialize sandbox.sandbox initialization failed: Operation not permitted\nFailed to initialize sandbox.sandbox initialization failed: Operation not permitted\nFailed to initialize sandbox.[0827/131020.380012:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/9e465556-dade-4efe-85d3-82bd4f94ed8d.dmp: Operation not permitted (1)\nFailed to initialize sandbox.Failed to initialize sandbox.[0827/131020.392982:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/775426fa-1f8f-47ce-b6fb-bb92f3b13fa1.dmp: Operation not permitted (1)\n[87724:10723192:0827/131020.393959:ERROR:content/browser/gpu/gpu_process_host.cc:1035] GPU process exited unexpectedly: exit_code=6\n[87724:10723192:0827/131020.393984:FATAL:content/browser/gpu/gpu_data_manager_impl_private.cc:417] GPU process isn't usable. Goodbye.\n[0827/131020.406281:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/47f97fe9-25bb-443c-af3e-e498e7ddab23.dmp: Operation not permitted (1)\n[0827/131020.417284:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/ea89e338-2b77-4133-91ae-df6a45cfcb1d.dmp: Operation not permitted (1)\n[0827/131020.429495:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/1608fb12-3fc7-42c8-806d-760dce5d688e.dmp: Operation not permitted (1)\n[0827/131020.789375:ERROR:third_party/crashpad/crashpad/util/file/file_io_posix.cc:153] open /Users/shurun/Library/Application Support/Google/Chrome/Crashpad/new/f78d96d1-654f-4e73-8af0-f10a289fc5ea.dmp: Operation not permitted (1)"
+}
