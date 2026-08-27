@@ -1,0 +1,1335 @@
+{
+ "tldrawFileFormatVersion": 1,
+ "schema": {
+  "schemaVersion": 1,
+  "storeVersion": 4,
+  "recordVersions": {
+   "asset": {
+    "version": 1,
+    "subTypeKey": "type",
+    "subTypeVersions": {
+     "image": 2,
+     "video": 2,
+     "bookmark": 0
+    }
+   },
+   "camera": {
+    "version": 1
+   },
+   "document": {
+    "version": 2
+   },
+   "instance": {
+    "version": 17
+   },
+   "instance_page_state": {
+    "version": 3
+   },
+   "page": {
+    "version": 1
+   },
+   "shape": {
+    "version": 3,
+    "subTypeKey": "type",
+    "subTypeVersions": {
+     "group": 0,
+     "embed": 4,
+     "bookmark": 1,
+     "image": 2,
+     "text": 1,
+     "draw": 1,
+     "geo": 7,
+     "line": 0,
+     "note": 4,
+     "frame": 0,
+     "arrow": 1,
+     "highlight": 0,
+     "video": 1
+    }
+   },
+   "instance_presence": {
+    "version": 4
+   },
+   "pointer": {
+    "version": 1
+   }
+  }
+ },
+ "records": [
+  {
+   "id": "document:document",
+   "typeName": "document",
+   "gridSize": 10,
+   "name": "",
+   "meta": {}
+  },
+  {
+   "id": "page:page1",
+   "typeName": "page",
+   "name": "Page 1",
+   "index": "a1",
+   "meta": {}
+  },
+  {
+   "id": "shape:title",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a1",
+   "x": 40,
+   "y": 20,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 780,
+    "h": 70,
+    "geo": "rectangle",
+    "color": "black",
+    "labelColor": "black",
+    "fill": "none",
+    "dash": "solid",
+    "size": "l",
+    "font": "draw",
+    "text": "ERPNext 业务流程时序图",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:h1",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a2",
+   "x": 40,
+   "y": 140,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 280,
+    "h": 90,
+    "geo": "rectangle",
+    "color": "blue",
+    "labelColor": "black",
+    "fill": "semi",
+    "dash": "draw",
+    "size": "m",
+    "font": "draw",
+    "text": "客户 CRM\nLead / Opportunity",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:h2",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a3",
+   "x": 400,
+   "y": 140,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 280,
+    "h": 90,
+    "geo": "rectangle",
+    "color": "blue",
+    "labelColor": "black",
+    "fill": "semi",
+    "dash": "draw",
+    "size": "m",
+    "font": "draw",
+    "text": "销售 Selling\nQuotation / SO",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:h3",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a4",
+   "x": 760,
+   "y": 140,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 280,
+    "h": 90,
+    "geo": "rectangle",
+    "color": "green",
+    "labelColor": "black",
+    "fill": "semi",
+    "dash": "draw",
+    "size": "m",
+    "font": "draw",
+    "text": "库存 Stock\nDN / PR / SE",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:h4",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a5",
+   "x": 1120,
+   "y": 140,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 280,
+    "h": 90,
+    "geo": "rectangle",
+    "color": "violet",
+    "labelColor": "black",
+    "fill": "semi",
+    "dash": "draw",
+    "size": "m",
+    "font": "draw",
+    "text": "制造 MFG\nWO / Job Card",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:h5",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a6",
+   "x": 1480,
+   "y": 140,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 280,
+    "h": 90,
+    "geo": "rectangle",
+    "color": "orange",
+    "labelColor": "black",
+    "fill": "semi",
+    "dash": "draw",
+    "size": "m",
+    "font": "draw",
+    "text": "采购 Buying\nMR / RFQ / PO",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:h6",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a7",
+   "x": 1840,
+   "y": 140,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 280,
+    "h": 90,
+    "geo": "rectangle",
+    "color": "red",
+    "labelColor": "black",
+    "fill": "semi",
+    "dash": "draw",
+    "size": "m",
+    "font": "draw",
+    "text": "供应商\nSupplier",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:h7",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a8",
+   "x": 2200,
+   "y": 140,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 280,
+    "h": 90,
+    "geo": "rectangle",
+    "color": "yellow",
+    "labelColor": "black",
+    "fill": "semi",
+    "dash": "draw",
+    "size": "m",
+    "font": "draw",
+    "text": "会计 Accounts\nSI / PI / PE",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:l1",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "a9",
+   "x": 179,
+   "y": 240,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 2,
+    "h": 1500,
+    "geo": "rectangle",
+    "color": "grey",
+    "labelColor": "black",
+    "fill": "solid",
+    "dash": "solid",
+    "size": "s",
+    "font": "draw",
+    "text": "",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:l2",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "aA",
+   "x": 539,
+   "y": 240,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 2,
+    "h": 1500,
+    "geo": "rectangle",
+    "color": "grey",
+    "labelColor": "black",
+    "fill": "solid",
+    "dash": "solid",
+    "size": "s",
+    "font": "draw",
+    "text": "",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:l3",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "aB",
+   "x": 899,
+   "y": 240,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 2,
+    "h": 1500,
+    "geo": "rectangle",
+    "color": "grey",
+    "labelColor": "black",
+    "fill": "solid",
+    "dash": "solid",
+    "size": "s",
+    "font": "draw",
+    "text": "",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:l4",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "aC",
+   "x": 1259,
+   "y": 240,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 2,
+    "h": 1500,
+    "geo": "rectangle",
+    "color": "grey",
+    "labelColor": "black",
+    "fill": "solid",
+    "dash": "solid",
+    "size": "s",
+    "font": "draw",
+    "text": "",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:l5",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "aD",
+   "x": 1619,
+   "y": 240,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 2,
+    "h": 1500,
+    "geo": "rectangle",
+    "color": "grey",
+    "labelColor": "black",
+    "fill": "solid",
+    "dash": "solid",
+    "size": "s",
+    "font": "draw",
+    "text": "",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:l6",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "aE",
+   "x": 1979,
+   "y": 240,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 2,
+    "h": 1500,
+    "geo": "rectangle",
+    "color": "grey",
+    "labelColor": "black",
+    "fill": "solid",
+    "dash": "solid",
+    "size": "s",
+    "font": "draw",
+    "text": "",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:l7",
+   "typeName": "shape",
+   "type": "geo",
+   "parentId": "page:page1",
+   "index": "aF",
+   "x": 2339,
+   "y": 240,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "w": 2,
+    "h": 1500,
+    "geo": "rectangle",
+    "color": "grey",
+    "labelColor": "black",
+    "fill": "solid",
+    "dash": "solid",
+    "size": "s",
+    "font": "draw",
+    "text": "",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "url": ""
+   }
+  },
+  {
+   "id": "shape:n1",
+   "typeName": "shape",
+   "type": "note",
+   "parentId": "page:page1",
+   "index": "aG",
+   "x": 2560,
+   "y": 300,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "color": "light-red",
+    "size": "s",
+    "text": "退货统一入口\nmake_return_doc\n同类型自映射, 数量取负\nDN / PR / SI / PI / POS\n/ Subcontracting Receipt",
+    "font": "draw",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "fontSizeAdjustment": 0,
+    "url": "",
+    "scale": 1,
+    "labelColor": "black"
+   }
+  },
+  {
+   "id": "shape:n2",
+   "typeName": "shape",
+   "type": "note",
+   "parentId": "page:page1",
+   "index": "aH",
+   "x": 2560,
+   "y": 560,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "color": "light-blue",
+    "size": "s",
+    "text": "跨公司交易\nmake_inter_company_\ntransaction\nSO ↔ PO\nSI ↔ PI\nDN ↔ PR\nJE → JE",
+    "font": "draw",
+    "align": "middle",
+    "verticalAlign": "middle",
+    "growY": 0,
+    "fontSizeAdjustment": 0,
+    "url": "",
+    "scale": 1,
+    "labelColor": "black"
+   }
+  },
+  {
+   "id": "shape:ar1",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aI",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "black",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l1",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.05
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l2",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.05
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "1. 询价线索 → Quotation",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar2",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aJ",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "dashed",
+    "size": "s",
+    "fill": "none",
+    "color": "grey",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l2",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.102
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l1",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.102
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "2. 报价提交给客户",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar3",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aK",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "black",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l1",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.154
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l2",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.154
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "3. 确认订单 → Sales Order",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar4",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aL",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "violet",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l2",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.206
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l4",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.206
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "4. SO → Production Plan / Work Order",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar5",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aM",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "orange",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l4",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.258
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l5",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.258
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "5. 物料缺口 → Material Request",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar6",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aN",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "black",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l5",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.31
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l6",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.31
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "6. RFQ 询价",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar7",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aO",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "dashed",
+    "size": "s",
+    "fill": "none",
+    "color": "grey",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l6",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.362
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l5",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.362
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "7. Supplier Quotation 报价",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar8",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aP",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "orange",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l5",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.414
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l6",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.414
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "8. Purchase Order 下单",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar9",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aQ",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "green",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l6",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.466
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l3",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.466
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "9. 到货 → Purchase Receipt 入库",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar10",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aR",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "yellow",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l3",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.518
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l7",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.518
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "10. PR → Purchase Invoice 应付",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar11",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aS",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "dashed",
+    "size": "s",
+    "fill": "none",
+    "color": "grey",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l7",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.57
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l6",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.57
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "11. Payment Entry 付款",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar12",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aT",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "violet",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l4",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.622
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l3",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.622
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "12. Pick List / Stock Entry 生产领料",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar13",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aU",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "violet",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l4",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.674
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l3",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.674
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "13. Job Card 报工 → Stock Entry 完工入库",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar14",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aV",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "green",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l2",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.726
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l3",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.726
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "14. SO → Pick List 拣货",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar15",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aW",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "green",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l3",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.778
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l1",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.778
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "15. Delivery Note 发货给客户",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar16",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aX",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "yellow",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l2",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.83
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l7",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.83
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "16. SO / DN → Sales Invoice 开票",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar17",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aY",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "solid",
+    "size": "s",
+    "fill": "none",
+    "color": "black",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l1",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.882
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l7",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.882
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "17. Payment Entry / Payment Request 收款",
+    "font": "draw"
+   }
+  },
+  {
+   "id": "shape:ar18",
+   "typeName": "shape",
+   "type": "arrow",
+   "parentId": "page:page1",
+   "index": "aZ",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "isLocked": false,
+   "opacity": 1,
+   "meta": {},
+   "props": {
+    "dash": "dotted",
+    "size": "s",
+    "fill": "none",
+    "color": "grey",
+    "labelColor": "black",
+    "bend": 0,
+    "start": {
+     "type": "binding",
+     "boundShapeId": "shape:l3",
+     "normalizedAnchor": {
+      "x": 1,
+      "y": 0.934
+     },
+     "isExact": false
+    },
+    "end": {
+     "type": "binding",
+     "boundShapeId": "shape:l7",
+     "normalizedAnchor": {
+      "x": 0,
+      "y": 0.934
+     },
+     "isExact": false
+    },
+    "arrowheadStart": "none",
+    "arrowheadEnd": "arrow",
+    "text": "18. Stock Ledger Entry → GL Entry 存货核算",
+    "font": "draw"
+   }
+  }
+ ]
+}
