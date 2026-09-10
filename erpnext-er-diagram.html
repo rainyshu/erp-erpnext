@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ERPNext ER 图 - 核心实体关系</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      background: #22d3ee;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-left: 1.75rem;
+    }
+
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+
+    svg {
+      width: 100%;
+      min-width: 1600px;
+      display: block;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem;
+      border: 1px solid #1e293b;
+      padding: 1.25rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card-dot.orange { background: #fb923c; }
+
+    .card h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .card ul {
+      list-style: none;
+      color: #94a3b8;
+      font-size: 0.75rem;
+    }
+
+    .card li {
+      margin-bottom: 0.375rem;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: #475569;
+      font-size: 0.75rem;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: auto;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .toolbar-toggle {
+      background: transparent;
+      border: none;
+      color: #475569;
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      transition: color 0.2s, background 0.2s;
+    }
+    .toolbar-toggle:hover { color: #94a3b8; background: rgba(30, 41, 59, 0.5); }
+    .toolbar-actions {
+      display: none;
+      gap: 0.5rem;
+    }
+    .toolbar.expanded .toolbar-actions { display: flex; }
+    .toolbar-actions button {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .toolbar-actions button:hover {
+      background: rgba(51, 65, 85, 0.8);
+      color: white;
+      border-color: #475569;
+    }
+
+    @media print {
+      body { background: #020617; padding: 1rem; }
+      .toolbar { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="report-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>ERPNext 核心实体关系图 (ER Diagram)</h1>
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <button onclick="copyAsImage(this)">📋 Copy</button>
+            <button onclick="downloadPNG(this)">🖼️ PNG</button>
+            <button onclick="downloadPDF(this)">📄 PDF</button>
+          </div>
+          <button class="toolbar-toggle" onclick="this.parentElement.classList.toggle('expanded')" title="Export options" aria-label="Export options">⋯</button>
+        </div>
+      </div>
+      <p class="subtitle">基于 erpnext/ 代码库 doctype 定义自动提取 · 核心业务域实体与关键外键关系</p>
+    </div>
+
+    <!-- Main Diagram -->
+    <div class="diagram-container">
+      <svg viewBox="0 0 2000 2400">
+        <!-- Definitions -->
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrowhead-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+          </marker>
+          <marker id="arrowhead-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+          </marker>
+          <marker id="arrowhead-violet" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#a78bfa" />
+          </marker>
+          <marker id="arrowhead-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
+          </marker>
+          <marker id="arrowhead-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Background Grid -->
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ============================================================
+             业务域分组边界框 (从后往前画)
+             ============================================================ -->
+
+        <!-- 全局基础配置域 (顶部) -->
+        <rect x="30" y="30" width="1940" height="220" rx="12" fill="rgba(251, 191, 36, 0.03)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="52" fill="#fbbf24" font-size="11" font-weight="600">⚙️ 基础配置 (Setup / Global)</text>
+
+        <!-- 库存主数据域 -->
+        <rect x="30" y="290" width="500" height="380" rx="12" fill="rgba(167, 139, 250, 0.05)" stroke="#a78bfa" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="312" fill="#a78bfa" font-size="11" font-weight="600">📦 库存与物料 (Stock / Inventory)</text>
+
+        <!-- 合作伙伴主数据域 -->
+        <rect x="560" y="290" width="460" height="380" rx="12" fill="rgba(34, 211, 238, 0.05)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="572" y="312" fill="#22d3ee" font-size="11" font-weight="600">👥 合作伙伴 (Parties / CRM)</text>
+
+        <!-- 财务主数据域 -->
+        <rect x="1050" y="290" width="460" height="380" rx="12" fill="rgba(52, 211, 153, 0.05)" stroke="#34d399" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="1062" y="312" fill="#34d399" font-size="11" font-weight="600">💰 财务 (Accounts / Finance)</text>
+
+        <!-- 项目/HR/资产域 -->
+        <rect x="1540" y="290" width="430" height="380" rx="12" fill="rgba(251, 146, 60, 0.05)" stroke="#fb923c" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="1552" y="312" fill="#fb923c" font-size="11" font-weight="600">🏗️ 项目·人力·资产</text>
+
+        <!-- 销售流程域 (中间左侧) -->
+        <rect x="30" y="710" width="960" height="520" rx="12" fill="rgba(34, 211, 238, 0.03)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="732" fill="#22d3ee" font-size="11" font-weight="600">📈 销售流程 (Sales Flow)</text>
+
+        <!-- 采购流程域 (中间右侧) -->
+        <rect x="1010" y="710" width="960" height="520" rx="12" fill="rgba(251, 146, 60, 0.03)" stroke="#fb923c" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="1022" y="732" fill="#fb923c" font-size="11" font-weight="600">🛒 采购流程 (Purchase Flow)</text>
+
+        <!-- 库存交易域 -->
+        <rect x="30" y="1270" width="960" height="340" rx="12" fill="rgba(167, 139, 250, 0.03)" stroke="#a78bfa" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="1292" fill="#a78bfa" font-size="11" font-weight="600">🔄 库存交易与调拨 (Stock Transactions)</text>
+
+        <!-- 财务交易域 -->
+        <rect x="1010" y="1270" width="960" height="340" rx="12" fill="rgba(52, 211, 153, 0.03)" stroke="#34d399" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="1022" y="1292" fill="#34d399" font-size="11" font-weight="600">💳 收付款与总账 (Payments / GL)</text>
+
+        <!-- 制造与质量域 -->
+        <rect x="30" y="1650" width="960" height="360" rx="12" fill="rgba(251, 191, 36, 0.03)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="1672" fill="#fbbf24" font-size="11" font-weight="600">🏭 制造与质量 (Manufacturing / Quality)</text>
+
+        <!-- 资产维修域 -->
+        <rect x="1010" y="1650" width="960" height="360" rx="12" fill="rgba(251, 113, 133, 0.03)" stroke="#fb7185" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="1022" y="1672" fill="#fb7185" font-size="11" font-weight="600">🔧 资产管理 (Assets / Support)</text>
+
+        <!-- 台账与报表域 (底部) -->
+        <rect x="30" y="2050" width="1940" height="300" rx="12" fill="rgba(100, 116, 139, 0.05)" stroke="#64748b" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="42" y="2072" fill="#94a3b8" font-size="11" font-weight="600">📊 台账与辅助实体 (Ledgers / Auxiliary)</text>
+
+        <!-- ============================================================
+             实体盒子 — 按域绘制
+             ============================================================ -->
+
+        <!-- ---- 基础配置域 ---- -->
+        <!-- Company -->
+        <rect x="60" y="70" width="160" height="140" rx="6" fill="#0f172a"/>
+        <rect x="60" y="70" width="160" height="140" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="140" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Company</text>
+        <text x="140" y="112" fill="#fbbf24" font-size="8" text-anchor="middle">公司 (树形)</text>
+        <line x1="70" y1="122" x2="210" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="70" y="138" fill="#94a3b8" font-size="7">  parent_company → Company</text>
+        <text x="70" y="152" fill="#94a3b8" font-size="7">  default_currency → Currency</text>
+        <text x="70" y="166" fill="#94a3b8" font-size="7">  default_warehouse → Warehouse</text>
+        <text x="70" y="180" fill="#94a3b8" font-size="7">  default_receivable → Account</text>
+        <text x="70" y="194" fill="#94a3b8" font-size="7">  cost_center → Cost Center</text>
+
+        <!-- Currency -->
+        <rect x="260" y="70" width="140" height="100" rx="6" fill="#0f172a"/>
+        <rect x="260" y="70" width="140" height="100" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="330" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Currency</text>
+        <text x="330" y="112" fill="#fbbf24" font-size="8" text-anchor="middle">货币</text>
+        <line x1="270" y1="122" x2="390" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="270" y="138" fill="#94a3b8" font-size="7">  name</text>
+        <text x="270" y="152" fill="#94a3b8" font-size="7">  symbol</text>
+
+        <!-- UOM -->
+        <rect x="440" y="70" width="140" height="100" rx="6" fill="#0f172a"/>
+        <rect x="440" y="70" width="140" height="100" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="510" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">UOM</text>
+        <text x="510" y="112" fill="#fbbf24" font-size="8" text-anchor="middle">计量单位</text>
+        <line x1="450" y1="122" x2="570" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="450" y="138" fill="#94a3b8" font-size="7">  uom_name</text>
+        <text x="450" y="152" fill="#94a3b8" font-size="7">  category → UOM Category</text>
+
+        <!-- Brand -->
+        <rect x="620" y="70" width="140" height="100" rx="6" fill="#0f172a"/>
+        <rect x="620" y="70" width="140" height="100" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="690" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Brand</text>
+        <text x="690" y="112" fill="#fbbf24" font-size="8" text-anchor="middle">品牌</text>
+        <line x1="630" y1="122" x2="750" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="630" y="138" fill="#94a3b8" font-size="7">  brand</text>
+        <text x="630" y="152" fill="#94a3b8" font-size="7">  description</text>
+
+        <!-- Address (Frappe) -->
+        <rect x="800" y="70" width="160" height="100" rx="6" fill="#0f172a"/>
+        <rect x="800" y="70" width="160" height="100" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="880" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Address</text>
+        <text x="880" y="112" fill="#94a3b8" font-size="8" text-anchor="middle">地址 (Frappe Core)</text>
+        <line x1="810" y1="122" x2="950" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="810" y="138" fill="#94a3b8" font-size="7">  address_title</text>
+        <text x="810" y="152" fill="#94a3b8" font-size="7">  country, city, pincode</text>
+
+        <!-- Contact (Frappe) -->
+        <rect x="1000" y="70" width="160" height="100" rx="6" fill="#0f172a"/>
+        <rect x="1000" y="70" width="160" height="100" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="1080" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Contact</text>
+        <text x="1080" y="112" fill="#94a3b8" font-size="8" text-anchor="middle">联系人 (Frappe Core)</text>
+        <line x1="1010" y1="122" x2="1150" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="1010" y="138" fill="#94a3b8" font-size="7">  first_name, last_name</text>
+        <text x="1010" y="152" fill="#94a3b8" font-size="7">  email_id, phone</text>
+
+        <!-- Employee -->
+        <rect x="1200" y="70" width="160" height="140" rx="6" fill="#0f172a"/>
+        <rect x="1200" y="70" width="160" height="140" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="1280" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Employee</text>
+        <text x="1280" y="112" fill="#fbbf24" font-size="8" text-anchor="middle">员工</text>
+        <line x1="1210" y1="122" x2="1350" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="1210" y="138" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1210" y="152" fill="#94a3b8" font-size="7">  department → Department</text>
+        <text x="1210" y="166" fill="#94a3b8" font-size="7">  reports_to → Employee</text>
+        <text x="1210" y="180" fill="#94a3b8" font-size="7">  branch → Branch</text>
+        <text x="1210" y="194" fill="#94a3b8" font-size="7">  user_id → User</text>
+
+        <!-- Bank -->
+        <rect x="1400" y="70" width="140" height="100" rx="6" fill="#0f172a"/>
+        <rect x="1400" y="70" width="140" height="100" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="1470" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Bank</text>
+        <text x="1470" y="112" fill="#fbbf24" font-size="8" text-anchor="middle">银行</text>
+        <line x1="1410" y1="122" x2="1530" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="1410" y="138" fill="#94a3b8" font-size="7">  bank_name</text>
+        <text x="1410" y="152" fill="#94a3b8" font-size="7">  swift_number</text>
+
+        <!-- Price List -->
+        <rect x="1580" y="70" width="160" height="100" rx="6" fill="#0f172a"/>
+        <rect x="1580" y="70" width="160" height="100" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="1660" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Price List</text>
+        <text x="1660" y="112" fill="#fbbf24" font-size="8" text-anchor="middle">价格表</text>
+        <line x1="1590" y1="122" x2="1730" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="1590" y="138" fill="#94a3b8" font-size="7">  price_list_name</text>
+        <text x="1590" y="152" fill="#94a3b8" font-size="7">  currency → Currency</text>
+
+        <!-- Cost Center -->
+        <rect x="1780" y="70" width="160" height="100" rx="6" fill="#0f172a"/>
+        <rect x="1780" y="70" width="160" height="100" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="1860" y="95" fill="white" font-size="12" font-weight="700" text-anchor="middle">Cost Center</text>
+        <text x="1860" y="112" fill="#fbbf24" font-size="8" text-anchor="middle">成本中心 (树形)</text>
+        <line x1="1790" y1="122" x2="1930" y2="122" stroke="#334155" stroke-width="0.5"/>
+        <text x="1790" y="138" fill="#94a3b8" font-size="7">  cost_center_name</text>
+        <text x="1790" y="152" fill="#94a3b8" font-size="7">  parent_cost_center</text>
+
+        <!-- ---- 库存主数据域 ---- -->
+        <!-- Item -->
+        <rect x="60" y="340" width="200" height="220" rx="6" fill="#0f172a"/>
+        <rect x="60" y="340" width="200" height="220" rx="6" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="160" y="365" fill="white" font-size="13" font-weight="700" text-anchor="middle">Item</text>
+        <text x="160" y="382" fill="#a78bfa" font-size="9" text-anchor="middle">物料 / 产品</text>
+        <line x1="70" y1="392" x2="250" y2="392" stroke="#334155" stroke-width="0.5"/>
+        <text x="70" y="408" fill="#cbd5e1" font-size="7.5">  item_code (PK)</text>
+        <text x="70" y="422" fill="#cbd5e1" font-size="7.5">  item_name</text>
+        <text x="70" y="436" fill="#94a3b8" font-size="7">  item_group → Item Group</text>
+        <text x="70" y="450" fill="#94a3b8" font-size="7">  stock_uom → UOM</text>
+        <text x="70" y="464" fill="#94a3b8" font-size="7">  brand → Brand</text>
+        <text x="70" y="478" fill="#94a3b8" font-size="7">  default_bom → BOM</text>
+        <text x="70" y="492" fill="#94a3b8" font-size="7">  variant_of → Item</text>
+        <text x="70" y="506" fill="#94a3b8" font-size="7">  is_stock_item</text>
+        <text x="70" y="520" fill="#94a3b8" font-size="7">  description</text>
+        <text x="70" y="534" fill="#94a3b8" font-size="7">  barcodes [Item Barcode]</text>
+        <text x="70" y="548" fill="#94a3b8" font-size="7">  supplier_items [Item Supplier]</text>
+
+        <!-- Item Group -->
+        <rect x="300" y="340" width="180" height="120" rx="6" fill="#0f172a"/>
+        <rect x="300" y="340" width="180" height="120" rx="6" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="390" y="365" fill="white" font-size="12" font-weight="700" text-anchor="middle">Item Group</text>
+        <text x="390" y="382" fill="#a78bfa" font-size="9" text-anchor="middle">物料组 (树形)</text>
+        <line x1="310" y1="392" x2="470" y2="392" stroke="#334155" stroke-width="0.5"/>
+        <text x="310" y="408" fill="#94a3b8" font-size="7">  item_group_name</text>
+        <text x="310" y="422" fill="#94a3b8" font-size="7">  parent_item_group → Item Group</text>
+        <text x="310" y="436" fill="#94a3b8" font-size="7">  is_group</text>
+
+        <!-- Warehouse -->
+        <rect x="300" y="500" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="300" y="500" width="180" height="140" rx="6" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="390" y="525" fill="white" font-size="12" font-weight="700" text-anchor="middle">Warehouse</text>
+        <text x="390" y="542" fill="#a78bfa" font-size="9" text-anchor="middle">仓库 (树形)</text>
+        <line x1="310" y1="552" x2="470" y2="552" stroke="#334155" stroke-width="0.5"/>
+        <text x="310" y="568" fill="#94a3b8" font-size="7">  warehouse_name</text>
+        <text x="310" y="582" fill="#94a3b8" font-size="7">  parent_warehouse → Warehouse</text>
+        <text x="310" y="596" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="310" y="610" fill="#94a3b8" font-size="7">  account → Account</text>
+        <text x="310" y="624" fill="#94a3b8" font-size="7">  warehouse_type</text>
+
+        <!-- Batch -->
+        <rect x="60" y="590" width="180" height="110" rx="6" fill="#0f172a"/>
+        <rect x="60" y="590" width="180" height="110" rx="6" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="150" y="615" fill="white" font-size="12" font-weight="700" text-anchor="middle">Batch</text>
+        <text x="150" y="632" fill="#a78bfa" font-size="9" text-anchor="middle">批次</text>
+        <line x1="70" y1="642" x2="230" y2="642" stroke="#334155" stroke-width="0.5"/>
+        <text x="70" y="658" fill="#94a3b8" font-size="7">  batch_id</text>
+        <text x="70" y="672" fill="#94a3b8" font-size="7">  item → Item</text>
+        <text x="70" y="686" fill="#94a3b8" font-size="7">  supplier → Supplier</text>
+
+        <!-- ---- 合作伙伴主数据域 ---- -->
+        <!-- Customer -->
+        <rect x="590" y="340" width="200" height="220" rx="6" fill="#0f172a"/>
+        <rect x="590" y="340" width="200" height="220" rx="6" fill="rgba(34, 211, 238, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="690" y="365" fill="white" font-size="13" font-weight="700" text-anchor="middle">Customer</text>
+        <text x="690" y="382" fill="#22d3ee" font-size="9" text-anchor="middle">客户</text>
+        <line x1="600" y1="392" x2="780" y2="392" stroke="#334155" stroke-width="0.5"/>
+        <text x="600" y="408" fill="#cbd5e1" font-size="7.5">  customer_name (PK)</text>
+        <text x="600" y="422" fill="#94a3b8" font-size="7">  customer_group → Customer Group</text>
+        <text x="600" y="436" fill="#94a3b8" font-size="7">  territory → Territory</text>
+        <text x="600" y="450" fill="#94a3b8" font-size="7">  default_currency → Currency</text>
+        <text x="600" y="464" fill="#94a3b8" font-size="7">  default_price_list → Price List</text>
+        <text x="600" y="478" fill="#94a3b8" font-size="7">  primary_contact → Contact</text>
+        <text x="600" y="492" fill="#94a3b8" font-size="7">  primary_address → Address</text>
+        <text x="600" y="506" fill="#94a3b8" font-size="7">  customer_type</text>
+        <text x="600" y="520" fill="#94a3b8" font-size="7">  tax_category</text>
+        <text x="600" y="534" fill="#94a3b8" font-size="7">  payment_terms → Payment Terms</text>
+        <text x="600" y="548" fill="#94a3b8" font-size="7">  accounts [Party Account]</text>
+
+        <!-- Supplier -->
+        <rect x="820" y="340" width="200" height="220" rx="6" fill="#0f172a"/>
+        <rect x="820" y="340" width="200" height="220" rx="6" fill="rgba(34, 211, 238, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="920" y="365" fill="white" font-size="13" font-weight="700" text-anchor="middle">Supplier</text>
+        <text x="920" y="382" fill="#22d3ee" font-size="9" text-anchor="middle">供应商</text>
+        <line x1="830" y1="392" x2="1010" y2="392" stroke="#334155" stroke-width="0.5"/>
+        <text x="830" y="408" fill="#cbd5e1" font-size="7.5">  supplier_name (PK)</text>
+        <text x="830" y="422" fill="#94a3b8" font-size="7">  supplier_group → Supplier Group</text>
+        <text x="830" y="436" fill="#94a3b8" font-size="7">  default_currency → Currency</text>
+        <text x="830" y="450" fill="#94a3b8" font-size="7">  default_price_list → Price List</text>
+        <text x="830" y="464" fill="#94a3b8" font-size="7">  primary_contact → Contact</text>
+        <text x="830" y="478" fill="#94a3b8" font-size="7">  primary_address → Address</text>
+        <text x="830" y="492" fill="#94a3b8" font-size="7">  country → Country</text>
+        <text x="830" y="506" fill="#94a3b8" font-size="7">  tax_category</text>
+        <text x="830" y="520" fill="#94a3b8" font-size="7">  payment_terms</text>
+        <text x="830" y="534" fill="#94a3b8" font-size="7">  tax_withholding_category</text>
+        <text x="830" y="548" fill="#94a3b8" font-size="7">  accounts [Party Account]</text>
+
+        <!-- Lead -->
+        <rect x="590" y="600" width="200" height="140" rx="6" fill="#0f172a"/>
+        <rect x="590" y="600" width="200" height="140" rx="6" fill="rgba(34, 211, 238, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="690" y="625" fill="white" font-size="12" font-weight="700" text-anchor="middle">Lead</text>
+        <text x="690" y="642" fill="#22d3ee" font-size="9" text-anchor="middle">线索 (CRM)</text>
+        <line x1="600" y1="652" x2="780" y2="652" stroke="#334155" stroke-width="0.5"/>
+        <text x="600" y="668" fill="#94a3b8" font-size="7">  lead_name</text>
+        <text x="600" y="682" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="600" y="696" fill="#94a3b8" font-size="7">  territory → Territory</text>
+        <text x="600" y="710" fill="#94a3b8" font-size="7">  lead_owner → User</text>
+        <text x="600" y="724" fill="#94a3b8" font-size="7">  status, source</text>
+
+        <!-- Opportunity -->
+        <rect x="820" y="600" width="200" height="140" rx="6" fill="#0f172a"/>
+        <rect x="820" y="600" width="200" height="140" rx="6" fill="rgba(34, 211, 238, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="920" y="625" fill="white" font-size="12" font-weight="700" text-anchor="middle">Opportunity</text>
+        <text x="920" y="642" fill="#22d3ee" font-size="9" text-anchor="middle">商机 (多态 Party)</text>
+        <line x1="830" y1="652" x2="1010" y2="652" stroke="#334155" stroke-width="0.5"/>
+        <text x="830" y="668" fill="#94a3b8" font-size="7">  opportunity_from → DocType</text>
+        <text x="830" y="682" fill="#94a3b8" font-size="7">  party_name ↔ Customer/Lead</text>
+        <text x="830" y="696" fill="#94a3b8" font-size="7">  currency → Currency</text>
+        <text x="830" y="710" fill="#94a3b8" font-size="7">  sales_stage → Sales Stage</text>
+        <text x="830" y="724" fill="#94a3b8" font-size="7">  contact_person → Contact</text>
+
+        <!-- ---- 财务主数据域 ---- -->
+        <!-- Account -->
+        <rect x="1080" y="340" width="200" height="180" rx="6" fill="#0f172a"/>
+        <rect x="1080" y="340" width="200" height="180" rx="6" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1180" y="365" fill="white" font-size="13" font-weight="700" text-anchor="middle">Account</text>
+        <text x="1180" y="382" fill="#34d399" font-size="9" text-anchor="middle">会计科目 (树形)</text>
+        <line x1="1090" y1="392" x2="1270" y2="392" stroke="#334155" stroke-width="0.5"/>
+        <text x="1090" y="408" fill="#cbd5e1" font-size="7.5">  name (PK)</text>
+        <text x="1090" y="422" fill="#94a3b8" font-size="7">  account_number</text>
+        <text x="1090" y="436" fill="#94a3b8" font-size="7">  parent_account → Account</text>
+        <text x="1090" y="450" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1090" y="464" fill="#94a3b8" font-size="7">  account_currency → Currency</text>
+        <text x="1090" y="478" fill="#94a3b8" font-size="7">  account_type</text>
+        <text x="1090" y="492" fill="#94a3b8" font-size="7">  is_group</text>
+        <text x="1090" y="506" fill="#94a3b8" font-size="7">  root_type (Asset/Liability/...)</text>
+
+        <!-- Bank Account -->
+        <rect x="1310" y="340" width="180" height="120" rx="6" fill="#0f172a"/>
+        <rect x="1310" y="340" width="180" height="120" rx="6" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1400" y="365" fill="white" font-size="12" font-weight="700" text-anchor="middle">Bank Account</text>
+        <text x="1400" y="382" fill="#34d399" font-size="9" text-anchor="middle">银行账户</text>
+        <line x1="1320" y1="392" x2="1480" y2="392" stroke="#334155" stroke-width="0.5"/>
+        <text x="1320" y="408" fill="#94a3b8" font-size="7">  account_name</text>
+        <text x="1320" y="422" fill="#94a3b8" font-size="7">  bank → Bank</text>
+        <text x="1320" y="436" fill="#94a3b8" font-size="7">  account → Account</text>
+        <text x="1320" y="450" fill="#94a3b8" font-size="7">  is_default</text>
+
+        <!-- Fiscal Year -->
+        <rect x="1080" y="560" width="180" height="100" rx="6" fill="#0f172a"/>
+        <rect x="1080" y="560" width="180" height="100" rx="6" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1170" y="585" fill="white" font-size="12" font-weight="700" text-anchor="middle">Fiscal Year</text>
+        <text x="1170" y="602" fill="#34d399" font-size="9" text-anchor="middle">会计年度</text>
+        <line x1="1090" y1="612" x2="1250" y2="612" stroke="#334155" stroke-width="0.5"/>
+        <text x="1090" y="628" fill="#94a3b8" font-size="7">  year, start_date, end_date</text>
+        <text x="1090" y="642" fill="#94a3b8" font-size="7">  is_frozen</text>
+
+        <!-- Accounting Period -->
+        <rect x="1300" y="560" width="180" height="100" rx="6" fill="#0f172a"/>
+        <rect x="1300" y="560" width="180" height="100" rx="6" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1390" y="585" fill="white" font-size="12" font-weight="700" text-anchor="middle">Accounting Period</text>
+        <text x="1390" y="602" fill="#34d399" font-size="9" text-anchor="middle">会计期间</text>
+        <line x1="1310" y1="612" x2="1470" y2="612" stroke="#334155" stroke-width="0.5"/>
+        <text x="1310" y="628" fill="#94a3b8" font-size="7">  period_name, start/end_date</text>
+        <text x="1310" y="642" fill="#94a3b8" font-size="7">  company → Company</text>
+
+        <!-- ---- 项目/HR/资产域 ---- -->
+        <!-- Project -->
+        <rect x="1570" y="340" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="1570" y="340" width="180" height="140" rx="6" fill="rgba(251, 146, 60, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1660" y="365" fill="white" font-size="12" font-weight="700" text-anchor="middle">Project</text>
+        <text x="1660" y="382" fill="#fb923c" font-size="9" text-anchor="middle">项目</text>
+        <line x1="1580" y1="392" x2="1740" y2="392" stroke="#334155" stroke-width="0.5"/>
+        <text x="1580" y="408" fill="#94a3b8" font-size="7">  project_name</text>
+        <text x="1580" y="422" fill="#94a3b8" font-size="7">  customer → Customer</text>
+        <text x="1580" y="436" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1580" y="450" fill="#94a3b8" font-size="7">  cost_center → Cost Center</text>
+        <text x="1580" y="464" fill="#94a3b8" font-size="7">  sales_order → Sales Order</text>
+
+        <!-- Task -->
+        <rect x="1780" y="340" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="1780" y="340" width="180" height="140" rx="6" fill="rgba(251, 146, 60, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1870" y="365" fill="white" font-size="12" font-weight="700" text-anchor="middle">Task</text>
+        <text x="1870" y="382" fill="#fb923c" font-size="9" text-anchor="middle">任务 (树形)</text>
+        <line x1="1790" y1="392" x2="1950" y2="392" stroke="#334155" stroke-width="0.5"/>
+        <text x="1790" y="408" fill="#94a3b8" font-size="7">  subject</text>
+        <text x="1790" y="422" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="1790" y="436" fill="#94a3b8" font-size="7">  parent_task → Task</text>
+        <text x="1790" y="450" fill="#94a3b8" font-size="7">  issue → Issue</text>
+        <text x="1790" y="464" fill="#94a3b8" font-size="7">  status</text>
+
+        <!-- Asset -->
+        <rect x="1570" y="520" width="180" height="160" rx="6" fill="#0f172a"/>
+        <rect x="1570" y="520" width="180" height="160" rx="6" fill="rgba(251, 146, 60, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1660" y="545" fill="white" font-size="12" font-weight="700" text-anchor="middle">Asset</text>
+        <text x="1660" y="562" fill="#fb923c" font-size="9" text-anchor="middle">资产</text>
+        <line x1="1580" y1="572" x2="1740" y2="572" stroke="#334155" stroke-width="0.5"/>
+        <text x="1580" y="588" fill="#94a3b8" font-size="7">  asset_name</text>
+        <text x="1580" y="602" fill="#94a3b8" font-size="7">  item_code → Item</text>
+        <text x="1580" y="616" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1580" y="630" fill="#94a3b8" font-size="7">  supplier → Supplier</text>
+        <text x="1580" y="644" fill="#94a3b8" font-size="7">  custodian → Employee</text>
+        <text x="1580" y="658" fill="#94a3b8" font-size="7">  location → Location</text>
+
+        <!-- Issue (Support) -->
+        <rect x="1780" y="520" width="180" height="160" rx="6" fill="#0f172a"/>
+        <rect x="1780" y="520" width="180" height="160" rx="6" fill="rgba(251, 146, 60, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1870" y="545" fill="white" font-size="12" font-weight="700" text-anchor="middle">Issue</text>
+        <text x="1870" y="562" fill="#fb923c" font-size="9" text-anchor="middle">工单/客服</text>
+        <line x1="1790" y1="572" x2="1950" y2="572" stroke="#334155" stroke-width="0.5"/>
+        <text x="1790" y="588" fill="#94a3b8" font-size="7">  subject</text>
+        <text x="1790" y="602" fill="#94a3b8" font-size="7">  customer → Customer</text>
+        <text x="1790" y="616" fill="#94a3b8" font-size="7">  lead → Lead</text>
+        <text x="1790" y="630" fill="#94a3b8" font-size="7">  contact → Contact</text>
+        <text x="1790" y="644" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="1790" y="658" fill="#94a3b8" font-size="7">  priority → Issue Priority</text>
+
+        <!-- ============================================================
+             销售流程域
+             ============================================================ -->
+        <!-- Quotation -->
+        <rect x="60" y="760" width="180" height="160" rx="6" fill="#0f172a"/>
+        <rect x="60" y="760" width="180" height="160" rx="6" fill="rgba(34, 211, 238, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="150" y="785" fill="white" font-size="12" font-weight="700" text-anchor="middle">Quotation</text>
+        <text x="150" y="802" fill="#22d3ee" font-size="9" text-anchor="middle">报价单</text>
+        <line x1="70" y1="812" x2="230" y2="812" stroke="#334155" stroke-width="0.5"/>
+        <text x="70" y="828" fill="#94a3b8" font-size="7">  quotation_to → DocType</text>
+        <text x="70" y="842" fill="#94a3b8" font-size="7">  party_name ↔ Customer/Lead</text>
+        <text x="70" y="856" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="70" y="870" fill="#94a3b8" font-size="7">  currency → Currency</text>
+        <text x="70" y="884" fill="#94a3b8" font-size="7">  selling_price_list → Price List</text>
+        <text x="70" y="898" fill="#94a3b8" font-size="7">  items [Quotation Item]</text>
+
+        <!-- Sales Order -->
+        <rect x="290" y="760" width="180" height="180" rx="6" fill="#0f172a"/>
+        <rect x="290" y="760" width="180" height="180" rx="6" fill="rgba(34, 211, 238, 0.4)" stroke="#22d3ee" stroke-width="2"/>
+        <text x="380" y="785" fill="white" font-size="13" font-weight="700" text-anchor="middle">Sales Order</text>
+        <text x="380" y="802" fill="#22d3ee" font-size="9" text-anchor="middle">销售订单 ✦核心</text>
+        <line x1="300" y1="812" x2="460" y2="812" stroke="#334155" stroke-width="0.5"/>
+        <text x="300" y="828" fill="#cbd5e1" font-size="7.5">  customer → Customer</text>
+        <text x="300" y="842" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="300" y="856" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="300" y="870" fill="#94a3b8" font-size="7">  set_warehouse → Warehouse</text>
+        <text x="300" y="884" fill="#94a3b8" font-size="7">  currency / price_list</text>
+        <text x="300" y="898" fill="#94a3b8" font-size="7">  items [Sales Order Item]</text>
+        <text x="300" y="912" fill="#94a3b8" font-size="7">  taxes [Sales Taxes]</text>
+        <text x="300" y="926" fill="#fbbf24" font-size="6.5">  inter_co_ref → Purchase Order</text>
+
+        <!-- Delivery Note -->
+        <rect x="520" y="760" width="180" height="180" rx="6" fill="#0f172a"/>
+        <rect x="520" y="760" width="180" height="180" rx="6" fill="rgba(34, 211, 238, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="610" y="785" fill="white" font-size="12" font-weight="700" text-anchor="middle">Delivery Note</text>
+        <text x="610" y="802" fill="#22d3ee" font-size="9" text-anchor="middle">送货单</text>
+        <line x1="530" y1="812" x2="690" y2="812" stroke="#334155" stroke-width="0.5"/>
+        <text x="530" y="828" fill="#cbd5e1" font-size="7.5">  customer → Customer</text>
+        <text x="530" y="842" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="530" y="856" fill="#94a3b8" font-size="7">  set_warehouse → Warehouse</text>
+        <text x="530" y="870" fill="#fb7185" font-size="7">  return_against → DN</text>
+        <text x="530" y="884" fill="#94a3b8" font-size="7">  items [DN Item]</text>
+        <text x="530" y="898" fill="#94a3b8" font-size="7">  against_sales_order (行)</text>
+        <text x="530" y="912" fill="#94a3b8" font-size="7">  against_sales_invoice (行)</text>
+        <text x="530" y="926" fill="#fbbf24" font-size="6.5">  inter_co_ref → Purchase Receipt</text>
+
+        <!-- Sales Invoice -->
+        <rect x="750" y="760" width="200" height="200" rx="6" fill="#0f172a"/>
+        <rect x="750" y="760" width="200" height="200" rx="6" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="2"/>
+        <text x="850" y="785" fill="white" font-size="13" font-weight="700" text-anchor="middle">Sales Invoice</text>
+        <text x="850" y="802" fill="#34d399" font-size="9" text-anchor="middle">销售发票 ✦核心</text>
+        <line x1="760" y1="812" x2="940" y2="812" stroke="#334155" stroke-width="0.5"/>
+        <text x="760" y="828" fill="#cbd5e1" font-size="7.5">  customer → Customer</text>
+        <text x="760" y="842" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="760" y="856" fill="#94a3b8" font-size="7">  debit_to → Account</text>
+        <text x="760" y="870" fill="#fb7185" font-size="7">  return_against → SI</text>
+        <text x="760" y="884" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="760" y="898" fill="#94a3b8" font-size="7">  items [SI Item]</text>
+        <text x="760" y="912" fill="#94a3b8" font-size="7">  sales_order (行) → SO</text>
+        <text x="760" y="926" fill="#94a3b8" font-size="7">  delivery_note (行) → DN</text>
+        <text x="760" y="940" fill="#fbbf24" font-size="6.5">  inter_co_ref → Purchase Invoice</text>
+
+        <!-- 销售流程箭头标注 (在域内) -->
+        <!-- 流程链：Quotation → Sales Order -->
+        <line x1="240" y1="840" x2="288" y2="840" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="264" y="834" fill="#22d3ee" font-size="7" text-anchor="middle">转化</text>
+
+        <!-- SO → DN -->
+        <line x1="470" y1="850" x2="518" y2="850" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="494" y="844" fill="#22d3ee" font-size="7" text-anchor="middle">发货</text>
+
+        <!-- DN → SI -->
+        <line x1="700" y1="860" x2="748" y2="860" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="724" y="854" fill="#22d3ee" font-size="7" text-anchor="middle">开票</text>
+
+        <!-- ============================================================
+             采购流程域
+             ============================================================ -->
+        <!-- Material Request -->
+        <rect x="1040" y="760" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="1040" y="760" width="180" height="140" rx="6" fill="rgba(251, 146, 60, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1130" y="785" fill="white" font-size="12" font-weight="700" text-anchor="middle">Material Request</text>
+        <text x="1130" y="802" fill="#fb923c" font-size="9" text-anchor="middle">物料申请</text>
+        <line x1="1050" y1="812" x2="1210" y2="812" stroke="#334155" stroke-width="0.5"/>
+        <text x="1050" y="828" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1050" y="842" fill="#94a3b8" font-size="7">  set_warehouse → Warehouse</text>
+        <text x="1050" y="856" fill="#94a3b8" font-size="7">  items [MR Item]</text>
+        <text x="1050" y="870" fill="#94a3b8" font-size="7">  sales_order (行) → SO</text>
+
+        <!-- Request for Quotation 省略 -->
+
+        <!-- Purchase Order -->
+        <rect x="1270" y="760" width="190" height="190" rx="6" fill="#0f172a"/>
+        <rect x="1270" y="760" width="190" height="190" rx="6" fill="rgba(251, 146, 60, 0.4)" stroke="#fb923c" stroke-width="2"/>
+        <text x="1365" y="785" fill="white" font-size="13" font-weight="700" text-anchor="middle">Purchase Order</text>
+        <text x="1365" y="802" fill="#fb923c" font-size="9" text-anchor="middle">采购订单 ✦核心</text>
+        <line x1="1280" y1="812" x2="1450" y2="812" stroke="#334155" stroke-width="0.5"/>
+        <text x="1280" y="828" fill="#cbd5e1" font-size="7.5">  supplier → Supplier</text>
+        <text x="1280" y="842" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1280" y="856" fill="#94a3b8" font-size="7">  set_warehouse → Warehouse</text>
+        <text x="1280" y="870" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="1280" y="884" fill="#94a3b8" font-size="7">  currency / price_list</text>
+        <text x="1280" y="898" fill="#94a3b8" font-size="7">  items [PO Item]</text>
+        <text x="1280" y="912" fill="#94a3b8" font-size="7">  material_request (行) → MR</text>
+        <text x="1280" y="926" fill="#94a3b8" font-size="7">  sales_order (行) → SO</text>
+        <text x="1280" y="940" fill="#fbbf24" font-size="6.5">  inter_co_ref → Sales Order</text>
+
+        <!-- Purchase Receipt -->
+        <rect x="1500" y="760" width="190" height="190" rx="6" fill="#0f172a"/>
+        <rect x="1500" y="760" width="190" height="190" rx="6" fill="rgba(251, 146, 60, 0.4)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1595" y="785" fill="white" font-size="12" font-weight="700" text-anchor="middle">Purchase Receipt</text>
+        <text x="1595" y="802" fill="#fb923c" font-size="9" text-anchor="middle">采购收货</text>
+        <line x1="1510" y1="812" x2="1680" y2="812" stroke="#334155" stroke-width="0.5"/>
+        <text x="1510" y="828" fill="#cbd5e1" font-size="7.5">  supplier → Supplier</text>
+        <text x="1510" y="842" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1510" y="856" fill="#94a3b8" font-size="7">  set_warehouse → Warehouse</text>
+        <text x="1510" y="870" fill="#fb7185" font-size="7">  return_against → PR</text>
+        <text x="1510" y="884" fill="#94a3b8" font-size="7">  items [PR Item]</text>
+        <text x="1510" y="898" fill="#94a3b8" font-size="7">  purchase_order (行) → PO</text>
+        <text x="1510" y="912" fill="#94a3b8" font-size="7">  material_request (行)</text>
+        <text x="1510" y="926" fill="#fbbf24" font-size="6.5">  inter_co_ref → Delivery Note</text>
+
+        <!-- Purchase Invoice -->
+        <rect x="1730" y="760" width="210" height="200" rx="6" fill="#0f172a"/>
+        <rect x="1730" y="760" width="210" height="200" rx="6" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="2"/>
+        <text x="1835" y="785" fill="white" font-size="13" font-weight="700" text-anchor="middle">Purchase Invoice</text>
+        <text x="1835" y="802" fill="#34d399" font-size="9" text-anchor="middle">采购发票 ✦核心</text>
+        <line x1="1740" y1="812" x2="1930" y2="812" stroke="#334155" stroke-width="0.5"/>
+        <text x="1740" y="828" fill="#cbd5e1" font-size="7.5">  supplier → Supplier</text>
+        <text x="1740" y="842" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1740" y="856" fill="#94a3b8" font-size="7">  credit_to → Account</text>
+        <text x="1740" y="870" fill="#fb7185" font-size="7">  return_against → PI</text>
+        <text x="1740" y="884" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="1740" y="898" fill="#94a3b8" font-size="7">  items [PI Item]</text>
+        <text x="1740" y="912" fill="#94a3b8" font-size="7">  purchase_order (行) → PO</text>
+        <text x="1740" y="926" fill="#94a3b8" font-size="7">  purchase_receipt (行) → PR</text>
+        <text x="1740" y="940" fill="#fbbf24" font-size="6.5">  inter_co_ref → Sales Invoice</text>
+
+        <!-- 采购流程箭头 -->
+        <!-- MR → PO -->
+        <line x1="1220" y1="830" x2="1268" y2="830" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+        <text x="1244" y="824" fill="#fb923c" font-size="7" text-anchor="middle">采购</text>
+
+        <!-- PO → PR -->
+        <line x1="1460" y1="850" x2="1498" y2="850" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+        <text x="1479" y="844" fill="#fb923c" font-size="7" text-anchor="middle">收货</text>
+
+        <!-- PR → PI -->
+        <line x1="1690" y1="860" x2="1728" y2="860" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+        <text x="1709" y="854" fill="#fb923c" font-size="7" text-anchor="middle">收票</text>
+
+        <!-- ============================================================
+             库存交易域
+             ============================================================ -->
+        <!-- Stock Entry -->
+        <rect x="60" y="1320" width="220" height="220" rx="6" fill="#0f172a"/>
+        <rect x="60" y="1320" width="220" height="220" rx="6" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="2"/>
+        <text x="170" y="1345" fill="white" font-size="13" font-weight="700" text-anchor="middle">Stock Entry</text>
+        <text x="170" y="1362" fill="#a78bfa" font-size="9" text-anchor="middle">库存调拨/入账 ✦核心</text>
+        <line x1="70" y1="1372" x2="270" y2="1372" stroke="#334155" stroke-width="0.5"/>
+        <text x="70" y="1388" fill="#cbd5e1" font-size="7.5">  stock_entry_type</text>
+        <text x="70" y="1402" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="70" y="1416" fill="#94a3b8" font-size="7">  from_warehouse → Warehouse</text>
+        <text x="70" y="1430" fill="#94a3b8" font-size="7">  to_warehouse → Warehouse</text>
+        <text x="70" y="1444" fill="#94a3b8" font-size="7">  bom_no → BOM</text>
+        <text x="70" y="1458" fill="#94a3b8" font-size="7">  purchase_order → PO</text>
+        <text x="70" y="1472" fill="#94a3b8" font-size="7">  delivery_note_no → DN</text>
+        <text x="70" y="1486" fill="#94a3b8" font-size="7">  sales_invoice_no → SI</text>
+        <text x="70" y="1500" fill="#94a3b8" font-size="7">  items [Stock Entry Detail]</text>
+        <text x="70" y="1514" fill="#94a3b8" font-size="7">  amended_from → Stock Entry</text>
+
+        <!-- Stock Entry Detail -->
+        <rect x="330" y="1320" width="200" height="180" rx="6" fill="#0f172a"/>
+        <rect x="330" y="1320" width="200" height="180" rx="6" fill="rgba(167, 139, 250, 0.25)" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="430" y="1345" fill="white" font-size="11" font-weight="600" text-anchor="middle">Stock Entry Detail</text>
+        <text x="430" y="1362" fill="#a78bfa" font-size="8" text-anchor="middle">库存分录行 [子表]</text>
+        <line x1="340" y1="1372" x2="520" y2="1372" stroke="#334155" stroke-width="0.5"/>
+        <text x="340" y="1388" fill="#94a3b8" font-size="7">  item_code → Item</text>
+        <text x="340" y="1402" fill="#94a3b8" font-size="7">  s_warehouse → Warehouse</text>
+        <text x="340" y="1416" fill="#94a3b8" font-size="7">  t_warehouse → Warehouse</text>
+        <text x="340" y="1430" fill="#94a3b8" font-size="7">  qty, rate, amount</text>
+        <text x="340" y="1444" fill="#94a3b8" font-size="7">  batch_no → Batch</text>
+        <text x="340" y="1458" fill="#94a3b8" font-size="7">  serial_and_batch_bundle</text>
+        <text x="340" y="1472" fill="#94a3b8" font-size="7">  against_stock_entry → SE</text>
+        <text x="340" y="1486" fill="#94a3b8" font-size="7">  ref_purchase_receipt → PR</text>
+
+        <!-- Serial and Batch Bundle -->
+        <rect x="580" y="1320" width="200" height="160" rx="6" fill="#0f172a"/>
+        <rect x="580" y="1320" width="200" height="160" rx="6" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="680" y="1345" fill="white" font-size="11" font-weight="700" text-anchor="middle">Serial and Batch Bundle</text>
+        <text x="680" y="1362" fill="#a78bfa" font-size="8" text-anchor="middle">序列号/批次束 (新)</text>
+        <line x1="590" y1="1372" x2="770" y2="1372" stroke="#334155" stroke-width="0.5"/>
+        <text x="590" y="1388" fill="#94a3b8" font-size="7">  item_code → Item</text>
+        <text x="590" y="1402" fill="#94a3b8" font-size="7">  warehouse → Warehouse</text>
+        <text x="590" y="1416" fill="#94a3b8" font-size="7">  voucher_type → DocType</text>
+        <text x="590" y="1430" fill="#94a3b8" font-size="7">  voucher_no ↔ 动态</text>
+        <text x="590" y="1444" fill="#94a3b8" font-size="7">  type (Inward / Outward)</text>
+        <text x="590" y="1458" fill="#94a3b8" font-size="7">  entries [Serial and Batch Entry]</text>
+
+        <!-- Quality Inspection -->
+        <rect x="830" y="1320" width="180" height="160" rx="6" fill="#0f172a"/>
+        <rect x="830" y="1320" width="180" height="160" rx="6" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="920" y="1345" fill="white" font-size="11" font-weight="700" text-anchor="middle">Quality Inspection</text>
+        <text x="920" y="1362" fill="#a78bfa" font-size="8" text-anchor="middle">质检单</text>
+        <line x1="840" y1="1372" x2="1000" y2="1372" stroke="#334155" stroke-width="0.5"/>
+        <text x="840" y="1388" fill="#94a3b8" font-size="7">  item_code → Item</text>
+        <text x="840" y="1402" fill="#94a3b8" font-size="7">  batch_no → Batch</text>
+        <text x="840" y="1416" fill="#94a3b8" font-size="7">  reference_type → DocType</text>
+        <text x="840" y="1430" fill="#94a3b8" font-size="7">  reference_name ↔ 动态</text>
+        <text x="840" y="1444" fill="#94a3b8" font-size="7">  inspected_by → User</text>
+        <text x="840" y="1458" fill="#94a3b8" font-size="7">  readings [Reading]</text>
+
+        <!-- Landed Cost Voucher -->
+        <rect x="60" y="1570" width="220" height="140" rx="6" fill="#0f172a"/>
+        <rect x="60" y="1570" width="220" height="140" rx="6" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="170" y="1595" fill="white" font-size="12" font-weight="700" text-anchor="middle">Landed Cost Voucher</text>
+        <text x="170" y="1612" fill="#a78bfa" font-size="9" text-anchor="middle">落地成本凭证</text>
+        <line x1="70" y1="1622" x2="270" y2="1622" stroke="#334155" stroke-width="0.5"/>
+        <text x="70" y="1638" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="70" y="1652" fill="#94a3b8" font-size="7">  purchase_receipts [子表]</text>
+        <text x="70" y="1666" fill="#94a3b8" font-size="7">  items [Landed Cost Item]</text>
+        <text x="70" y="1680" fill="#94a3b8" font-size="7">  taxes [Landed Cost Taxes]</text>
+        <text x="70" y="1694" fill="#94a3b8" font-size="7">  distributes_cost_based_on</text>
+
+        <!-- ============================================================
+             财务交易域
+             ============================================================ -->
+        <!-- Payment Entry -->
+        <rect x="1040" y="1320" width="200" height="220" rx="6" fill="#0f172a"/>
+        <rect x="1040" y="1320" width="200" height="220" rx="6" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="2"/>
+        <text x="1140" y="1345" fill="white" font-size="13" font-weight="700" text-anchor="middle">Payment Entry</text>
+        <text x="1140" y="1362" fill="#34d399" font-size="9" text-anchor="middle">付款单 ✦核心</text>
+        <line x1="1050" y1="1372" x2="1230" y2="1372" stroke="#334155" stroke-width="0.5"/>
+        <text x="1050" y="1388" fill="#cbd5e1" font-size="7.5">  payment_type (Receive/Pay)</text>
+        <text x="1050" y="1402" fill="#94a3b8" font-size="7">  party_type → DocType</text>
+        <text x="1050" y="1416" fill="#94a3b8" font-size="7">  party ↔ Customer/Supplier</text>
+        <text x="1050" y="1430" fill="#94a3b8" font-size="7">  paid_from → Account</text>
+        <text x="1050" y="1444" fill="#94a3b8" font-size="7">  paid_to → Account</text>
+        <text x="1050" y="1458" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1050" y="1472" fill="#94a3b8" font-size="7">  references [Payment Entry Ref]</text>
+        <text x="1050" y="1486" fill="#94a3b8" font-size="7">  mode_of_payment</text>
+        <text x="1050" y="1500" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="1050" y="1514" fill="#94a3b8" font-size="7">  amended_from → PE</text>
+
+        <!-- Payment Entry Reference -->
+        <rect x="1290" y="1320" width="200" height="160" rx="6" fill="#0f172a"/>
+        <rect x="1290" y="1320" width="200" height="160" rx="6" fill="rgba(52, 211, 153, 0.25)" stroke="#34d399" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="1390" y="1345" fill="white" font-size="11" font-weight="600" text-anchor="middle">Payment Entry Reference</text>
+        <text x="1390" y="1362" fill="#34d399" font-size="8" text-anchor="middle">付款核销行 [子表]</text>
+        <line x1="1300" y1="1372" x2="1480" y2="1372" stroke="#334155" stroke-width="0.5"/>
+        <text x="1300" y="1388" fill="#94a3b8" font-size="7">  reference_doctype → DocType</text>
+        <text x="1300" y="1402" fill="#94a3b8" font-size="7">  reference_name ↔ SI/PI/...</text>
+        <text x="1300" y="1416" fill="#94a3b8" font-size="7">  total_amount</text>
+        <text x="1300" y="1430" fill="#94a3b8" font-size="7">  allocated_amount</text>
+        <text x="1300" y="1444" fill="#94a3b8" font-size="7">  outstanding_amount</text>
+        <text x="1300" y="1458" fill="#94a3b8" font-size="7">  advance_voucher_no ↔ 动态</text>
+
+        <!-- Journal Entry -->
+        <rect x="1540" y="1320" width="200" height="200" rx="6" fill="#0f172a"/>
+        <rect x="1540" y="1320" width="200" height="200" rx="6" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1640" y="1345" fill="white" font-size="12" font-weight="700" text-anchor="middle">Journal Entry</text>
+        <text x="1640" y="1362" fill="#34d399" font-size="9" text-anchor="middle">记账凭证</text>
+        <line x1="1550" y1="1372" x2="1730" y2="1372" stroke="#334155" stroke-width="0.5"/>
+        <text x="1550" y="1388" fill="#cbd5e1" font-size="7.5">  voucher_type</text>
+        <text x="1550" y="1402" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1550" y="1416" fill="#94a3b8" font-size="7">  posting_date</text>
+        <text x="1550" y="1430" fill="#94a3b8" font-size="7">  total_debit, total_credit</text>
+        <text x="1550" y="1444" fill="#94a3b8" font-size="7">  accounts [JE Account]</text>
+        <text x="1550" y="1458" fill="#94a3b8" font-size="7">  stock_entry → Stock Entry</text>
+        <text x="1550" y="1472" fill="#94a3b8" font-size="7">  inter_co_ref → JE</text>
+        <text x="1550" y="1486" fill="#94a3b8" font-size="7">  reversal_of → JE</text>
+        <text x="1550" y="1500" fill="#94a3b8" font-size="7">  amended_from → JE</text>
+
+        <!-- Journal Entry Account -->
+        <rect x="1790" y="1320" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="1790" y="1320" width="180" height="140" rx="6" fill="rgba(52, 211, 153, 0.25)" stroke="#34d399" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="1880" y="1345" fill="white" font-size="11" font-weight="600" text-anchor="middle">Journal Entry Account</text>
+        <text x="1880" y="1362" fill="#34d399" font-size="8" text-anchor="middle">凭证行 [子表]</text>
+        <line x1="1800" y1="1372" x2="1960" y2="1372" stroke="#334155" stroke-width="0.5"/>
+        <text x="1800" y="1388" fill="#94a3b8" font-size="7">  account → Account</text>
+        <text x="1800" y="1402" fill="#94a3b8" font-size="7">  party_type → DocType</text>
+        <text x="1800" y="1416" fill="#94a3b8" font-size="7">  party ↔ 动态</text>
+        <text x="1800" y="1430" fill="#94a3b8" font-size="7">  debit, credit</text>
+        <text x="1800" y="1444" fill="#94a3b8" font-size="7">  cost_center → Cost Center</text>
+
+        <!-- ============================================================
+             制造与质量域 (左下)
+             ============================================================ -->
+        <!-- BOM -->
+        <rect x="60" y="1720" width="220" height="220" rx="6" fill="#0f172a"/>
+        <rect x="60" y="1720" width="220" height="220" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="2"/>
+        <text x="170" y="1745" fill="white" font-size="13" font-weight="700" text-anchor="middle">BOM</text>
+        <text x="170" y="1762" fill="#fbbf24" font-size="9" text-anchor="middle">物料清单 ✦核心</text>
+        <line x1="70" y1="1772" x2="270" y2="1772" stroke="#334155" stroke-width="0.5"/>
+        <text x="70" y="1788" fill="#cbd5e1" font-size="7.5">  item → Item (成品)</text>
+        <text x="70" y="1802" fill="#94a3b8" font-size="7">  quantity, uom → UOM</text>
+        <text x="70" y="1816" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="70" y="1830" fill="#94a3b8" font-size="7">  items [BOM Item]</text>
+        <text x="70" y="1844" fill="#94a3b8" font-size="7">  operations [BOM Operation]</text>
+        <text x="70" y="1858" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="70" y="1872" fill="#94a3b8" font-size="7">  routing → Routing</text>
+        <text x="70" y="1886" fill="#94a3b8" font-size="7">  is_active, is_default</text>
+        <text x="70" y="1900" fill="#94a3b8" font-size="7">  amended_from → BOM</text>
+        <text x="70" y="1914" fill="#94a3b8" font-size="7">  total_cost / operating_cost</text>
+
+        <!-- BOM Item -->
+        <rect x="330" y="1720" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="330" y="1720" width="180" height="140" rx="6" fill="rgba(251, 191, 36, 0.25)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="420" y="1745" fill="white" font-size="11" font-weight="600" text-anchor="middle">BOM Item</text>
+        <text x="420" y="1762" fill="#fbbf24" font-size="8" text-anchor="middle">BOM行 [子表]</text>
+        <line x1="340" y1="1772" x2="500" y2="1772" stroke="#334155" stroke-width="0.5"/>
+        <text x="340" y="1788" fill="#94a3b8" font-size="7">  item_code → Item</text>
+        <text x="340" y="1802" fill="#94a3b8" font-size="7">  bom_no → BOM (多级)</text>
+        <text x="340" y="1816" fill="#94a3b8" font-size="7">  qty, uom → UOM</text>
+        <text x="340" y="1830" fill="#94a3b8" font-size="7">  source_warehouse → Whse</text>
+        <text x="340" y="1844" fill="#94a3b8" font-size="7">  rate, amount</text>
+
+        <!-- Work Order (示意) -->
+        <rect x="560" y="1720" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="560" y="1720" width="180" height="140" rx="6" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="650" y="1745" fill="white" font-size="12" font-weight="700" text-anchor="middle">Work Order</text>
+        <text x="650" y="1762" fill="#fbbf24" font-size="9" text-anchor="middle">生产工单</text>
+        <line x1="570" y1="1772" x2="730" y2="1772" stroke="#334155" stroke-width="0.5"/>
+        <text x="570" y="1788" fill="#94a3b8" font-size="7">  production_item → Item</text>
+        <text x="570" y="1802" fill="#94a3b8" font-size="7">  bom_no → BOM</text>
+        <text x="570" y="1816" fill="#94a3b8" font-size="7">  qty, company → Company</text>
+        <text x="570" y="1830" fill="#94a3b8" font-size="7">  sales_order → SO</text>
+        <text x="570" y="1844" fill="#94a3b8" font-size="7">  wip_warehouse → Warehouse</text>
+
+        <!-- ============================================================
+             资产管理域 (右下)
+             ============================================================ -->
+        <!-- Asset Repair -->
+        <rect x="1040" y="1720" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="1040" y="1720" width="180" height="140" rx="6" fill="rgba(251, 113, 133, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1130" y="1745" fill="white" font-size="12" font-weight="700" text-anchor="middle">Asset Repair</text>
+        <text x="1130" y="1762" fill="#fb7185" font-size="9" text-anchor="middle">资产维修</text>
+        <line x1="1050" y1="1772" x2="1210" y2="1772" stroke="#334155" stroke-width="0.5"/>
+        <text x="1050" y="1788" fill="#94a3b8" font-size="7">  asset → Asset</text>
+        <text x="1050" y="1802" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1050" y="1816" fill="#94a3b8" font-size="7">  cost_center → Cost Center</text>
+        <text x="1050" y="1830" fill="#94a3b8" font-size="7">  project → Project</text>
+        <text x="1050" y="1844" fill="#94a3b8" font-size="7">  stock_items / invoices</text>
+
+        <!-- Asset Movement -->
+        <rect x="1260" y="1720" width="180" height="140" rx="6" fill="#0f172a"/>
+        <rect x="1260" y="1720" width="180" height="140" rx="6" fill="rgba(251, 113, 133, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1350" y="1745" fill="white" font-size="12" font-weight="700" text-anchor="middle">Asset Movement</text>
+        <text x="1350" y="1762" fill="#fb7185" font-size="9" text-anchor="middle">资产转移</text>
+        <line x1="1270" y1="1772" x2="1430" y2="1772" stroke="#334155" stroke-width="0.5"/>
+        <text x="1270" y="1788" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1270" y="1802" fill="#94a3b8" font-size="7">  reference_doctype → DT</text>
+        <text x="1270" y="1816" fill="#94a3b8" font-size="7">  reference_name ↔ 动态</text>
+        <text x="1270" y="1830" fill="#94a3b8" font-size="7">  assets [Asset Movement Item]</text>
+        <text x="1270" y="1844" fill="#94a3b8" font-size="7">  purpose</text>
+
+        <!-- Asset Category -->
+        <rect x="1480" y="1720" width="180" height="120" rx="6" fill="#0f172a"/>
+        <rect x="1480" y="1720" width="180" height="120" rx="6" fill="rgba(251, 113, 133, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1570" y="1745" fill="white" font-size="12" font-weight="700" text-anchor="middle">Asset Category</text>
+        <text x="1570" y="1762" fill="#fb7185" font-size="9" text-anchor="middle">资产类别</text>
+        <line x1="1490" y1="1772" x2="1650" y2="1772" stroke="#334155" stroke-width="0.5"/>
+        <text x="1490" y="1788" fill="#94a3b8" font-size="7">  asset_category_name</text>
+        <text x="1490" y="1802" fill="#94a3b8" font-size="7">  depreciation_method</text>
+        <text x="1490" y="1816" fill="#94a3b8" font-size="7">  total_useful_life</text>
+
+        <!-- Location -->
+        <rect x="1700" y="1720" width="180" height="120" rx="6" fill="#0f172a"/>
+        <rect x="1700" y="1720" width="180" height="120" rx="6" fill="rgba(251, 113, 133, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1790" y="1745" fill="white" font-size="12" font-weight="700" text-anchor="middle">Location</text>
+        <text x="1790" y="1762" fill="#fb7185" font-size="9" text-anchor="middle">位置 (树形)</text>
+        <line x1="1710" y1="1772" x2="1870" y2="1772" stroke="#334155" stroke-width="0.5"/>
+        <text x="1710" y="1788" fill="#94a3b8" font-size="7">  location_name</text>
+        <text x="1710" y="1802" fill="#94a3b8" font-size="7">  parent_location → Location</text>
+        <text x="1710" y="1816" fill="#94a3b8" font-size="7">  is_group</text>
+
+        <!-- ============================================================
+             台账与辅助实体
+             ============================================================ -->
+        <!-- Bin -->
+        <rect x="60" y="2110" width="160" height="120" rx="6" fill="#0f172a"/>
+        <rect x="60" y="2110" width="160" height="120" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="140" y="2135" fill="white" font-size="12" font-weight="700" text-anchor="middle">Bin</text>
+        <text x="140" y="2152" fill="#94a3b8" font-size="9" text-anchor="middle">库存余额</text>
+        <line x1="70" y1="2162" x2="210" y2="2162" stroke="#334155" stroke-width="0.5"/>
+        <text x="70" y="2178" fill="#94a3b8" font-size="7">  item_code → Item</text>
+        <text x="70" y="2192" fill="#94a3b8" font-size="7">  warehouse → Warehouse</text>
+        <text x="70" y="2206" fill="#94a3b8" font-size="7">  actual_qty, projected_qty</text>
+
+        <!-- Stock Ledger Entry -->
+        <rect x="260" y="2110" width="200" height="140" rx="6" fill="#0f172a"/>
+        <rect x="260" y="2110" width="200" height="140" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="360" y="2135" fill="white" font-size="12" font-weight="700" text-anchor="middle">Stock Ledger Entry</text>
+        <text x="360" y="2152" fill="#94a3b8" font-size="9" text-anchor="middle">库存台账分录</text>
+        <line x1="270" y1="2162" x2="440" y2="2162" stroke="#334155" stroke-width="0.5"/>
+        <text x="270" y="2178" fill="#94a3b8" font-size="7">  item_code → Item</text>
+        <text x="270" y="2192" fill="#94a3b8" font-size="7">  warehouse → Warehouse</text>
+        <text x="270" y="2206" fill="#94a3b8" font-size="7">  actual_qty (余额)</text>
+        <text x="270" y="2220" fill="#94a3b8" font-size="7">  voucher_type → DocType</text>
+        <text x="270" y="2234" fill="#94a3b8" font-size="7">  voucher_no ↔ 动态</text>
+
+        <!-- GL Entry -->
+        <rect x="500" y="2110" width="220" height="160" rx="6" fill="#0f172a"/>
+        <rect x="500" y="2110" width="220" height="160" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="610" y="2135" fill="white" font-size="12" font-weight="700" text-anchor="middle">GL Entry</text>
+        <text x="610" y="2152" fill="#94a3b8" font-size="9" text-anchor="middle">总账分录</text>
+        <line x1="510" y1="2162" x2="700" y2="2162" stroke="#334155" stroke-width="0.5"/>
+        <text x="510" y="2178" fill="#94a3b8" font-size="7">  account → Account</text>
+        <text x="510" y="2192" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="510" y="2206" fill="#94a3b8" font-size="7">  debit, credit</text>
+        <text x="510" y="2220" fill="#94a3b8" font-size="7">  voucher_type → DocType</text>
+        <text x="510" y="2234" fill="#94a3b8" font-size="7">  voucher_no ↔ 动态</text>
+        <text x="510" y="2248" fill="#94a3b8" font-size="7">  party_type, party</text>
+        <text x="510" y="2262" fill="#94a3b8" font-size="7">  cost_center → Cost Center</text>
+
+        <!-- Item Price -->
+        <rect x="760" y="2110" width="180" height="120" rx="6" fill="#0f172a"/>
+        <rect x="760" y="2110" width="180" height="120" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="850" y="2135" fill="white" font-size="12" font-weight="700" text-anchor="middle">Item Price</text>
+        <text x="850" y="2152" fill="#94a3b8" font-size="9" text-anchor="middle">物料价格</text>
+        <line x1="770" y1="2162" x2="930" y2="2162" stroke="#334155" stroke-width="0.5"/>
+        <text x="770" y="2178" fill="#94a3b8" font-size="7">  item_code → Item</text>
+        <text x="770" y="2192" fill="#94a3b8" font-size="7">  uom → UOM</text>
+        <text x="770" y="2206" fill="#94a3b8" font-size="7">  price_list → Price List</text>
+        <text x="770" y="2220" fill="#94a3b8" font-size="7">  price_list_rate</text>
+
+        <!-- Asset Depreciation Schedule -->
+        <rect x="980" y="2110" width="220" height="140" rx="6" fill="#0f172a"/>
+        <rect x="980" y="2110" width="220" height="140" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="1090" y="2135" fill="white" font-size="12" font-weight="700" text-anchor="middle">Depreciation Schedule</text>
+        <text x="1090" y="2152" fill="#94a3b8" font-size="9" text-anchor="middle">资产折旧计划</text>
+        <line x1="990" y1="2162" x2="1190" y2="2162" stroke="#334155" stroke-width="0.5"/>
+        <text x="990" y="2178" fill="#94a3b8" font-size="7">  asset → Asset</text>
+        <text x="990" y="2192" fill="#94a3b8" font-size="7">  finance_book</text>
+        <text x="990" y="2206" fill="#94a3b8" font-size="7">  schedule_number, date</text>
+        <text x="990" y="2220" fill="#94a3b8" font-size="7">  depreciation_amount</text>
+        <text x="990" y="2234" fill="#94a3b8" font-size="7">  journal_entry → JE</text>
+
+        <!-- Sales Taxes and Charges -->
+        <rect x="1240" y="2110" width="200" height="140" rx="6" fill="#0f172a"/>
+        <rect x="1240" y="2110" width="200" height="140" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="1340" y="2135" fill="white" font-size="12" font-weight="700" text-anchor="middle">Taxes & Charges</text>
+        <text x="1340" y="2152" fill="#94a3b8" font-size="9" text-anchor="middle">税费模板/行</text>
+        <line x1="1250" y1="2162" x2="1430" y2="2162" stroke="#334155" stroke-width="0.5"/>
+        <text x="1250" y="2178" fill="#94a3b8" font-size="7">  charge_type</text>
+        <text x="1250" y="2192" fill="#94a3b8" font-size="7">  account_head → Account</text>
+        <text x="1250" y="2206" fill="#94a3b8" font-size="7">  cost_center → Cost Center</text>
+        <text x="1250" y="2220" fill="#94a3b8" font-size="7">  rate, tax_amount</text>
+        <text x="1250" y="2234" fill="#94a3b8" font-size="7">  description</text>
+
+        <!-- Pricing Rule -->
+        <rect x="1480" y="2110" width="180" height="120" rx="6" fill="#0f172a"/>
+        <rect x="1480" y="2110" width="180" height="120" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="1570" y="2135" fill="white" font-size="12" font-weight="700" text-anchor="middle">Pricing Rule</text>
+        <text x="1570" y="2152" fill="#94a3b8" font-size="9" text-anchor="middle">定价规则</text>
+        <line x1="1490" y1="2162" x2="1650" y2="2162" stroke="#334155" stroke-width="0.5"/>
+        <text x="1490" y="2178" fill="#94a3b8" font-size="7">  title, apply_on</text>
+        <text x="1490" y="2192" fill="#94a3b8" font-size="7">  price_or_product_discount</text>
+        <text x="1490" y="2206" fill="#94a3b8" font-size="7">  discount_percentage</text>
+
+        <!-- Budget -->
+        <rect x="1700" y="2110" width="180" height="120" rx="6" fill="#0f172a"/>
+        <rect x="1700" y="2110" width="180" height="120" rx="6" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="1790" y="2135" fill="white" font-size="12" font-weight="700" text-anchor="middle">Budget</text>
+        <text x="1790" y="2152" fill="#94a3b8" font-size="9" text-anchor="middle">预算</text>
+        <line x1="1710" y1="2162" x2="1870" y2="2162" stroke="#334155" stroke-width="0.5"/>
+        <text x="1710" y="2178" fill="#94a3b8" font-size="7">  company → Company</text>
+        <text x="1710" y="2192" fill="#94a3b8" font-size="7">  cost_center → Cost Center</text>
+        <text x="1710" y="2206" fill="#94a3b8" font-size="7">  fiscal_year → Fiscal Year</text>
+
+        <!-- ============================================================
+             跨域关键关系线 (在实体之后绘制，放在前面会被挡)
+             注意：为避免视觉混乱，仅绘制最重要的跨域关系
+             ============================================================ -->
+
+        <!-- Company → 全公司主数据 (统一示意，画在上方) -->
+        <!-- 从 Company 到多个域顶部的引用线用省略的短弧线示意 -->
+        <path d="M 220 210 L 220 240 Q 220 250 240 250 L 1860 250 Q 1880 250 1880 240 L 1880 70" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/>
+        <text x="1000" y="243" fill="#fbbf24" font-size="7" text-anchor="middle" opacity="0.6">company → Company (全局引用，几乎所有单据都有)</text>
+
+        <!-- Item → 各单据行的通用关系 (用一条穿过各域的虚线) -->
+        <path d="M 260 450 L 300 450 Q 320 450 320 470 L 320 1400 Q 320 1420 330 1420 L 330 1420" fill="none" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+        <text x="280" y="980" fill="#a78bfa" font-size="7" transform="rotate(-90, 280, 980)" text-anchor="middle" opacity="0.6">item_code → Item (所有行子表)</text>
+
+        <!-- Customer → 销售单据头的关系 -->
+        <path d="M 690 560 L 690 670 Q 690 690 700 690 L 700 720 Q 700 740 710 740 L 710 760" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.7"/>
+        <text x="700" y="660" fill="#22d3ee" font-size="7" text-anchor="middle" opacity="0.8">customer</text>
+
+        <!-- Supplier → 采购单据头 -->
+        <path d="M 920 560 L 920 670 Q 920 690 910 690 L 910 720 Q 910 740 900 740 L 900 760" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.7"/>
+        <text x="910" y="660" fill="#fb923c" font-size="7" text-anchor="middle" opacity="0.8">supplier</text>
+
+        <!-- Warehouse → 库存/采购/销售单据头 (通用) -->
+        <path d="M 390 640 L 390 710 Q 390 725 380 725 L 380 730" fill="none" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+        <text x="395" y="690" fill="#a78bfa" font-size="7" text-anchor="middle" opacity="0.7">warehouse</text>
+
+        <!-- Account → 财务单据头 (通用) -->
+        <path d="M 1180 520 L 1180 560 Q 1180 575 1170 575 L 1170 580" fill="none" stroke="#34d399" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+        <text x="1175" y="555" fill="#34d399" font-size="7" text-anchor="middle" opacity="0.7">account</text>
+
+        <!-- 跨公司互指 (SO ↔ PO) 用一条橙色弧线 -->
+        <path d="M 470 800 Q 980 760 1270 800" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="5,3" opacity="0.6"/>
+        <text x="850" y="755" fill="#fbbf24" font-size="7" text-anchor="middle" opacity="0.7">inter_company_order_reference</text>
+
+        <!-- (SI ↔ PI) 跨公司 -->
+        <path d="M 950 810 Q 1340 750 1730 810" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="5,3" opacity="0.6"/>
+        <text x="1340" y="748" fill="#fbbf24" font-size="7" text-anchor="middle" opacity="0.7">inter_company_invoice_reference</text>
+
+        <!-- (DN ↔ PR) 跨公司 -->
+        <path d="M 700 880 Q 1100 850 1500 880" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="5,3" opacity="0.6"/>
+        <text x="1100" y="845" fill="#fbbf24" font-size="7" text-anchor="middle" opacity="0.7">inter_company_reference</text>
+
+        <!-- ============================================================
+             图例 (Legend)
+             ============================================================ -->
+        <rect x="1700" y="160" width="270" height="250" rx="8" fill="rgba(15, 23, 42, 0.8)" stroke="#334155" stroke-width="1"/>
+        <text x="1715" y="180" fill="white" font-size="11" font-weight="700">图例 Legend</text>
+
+        <!-- 实体类型 -->
+        <text x="1715" y="200" fill="#94a3b8" font-size="9" font-weight="600">实体类型</text>
+
+        <rect x="1715" y="208" width="14" height="10" rx="2" fill="rgba(251, 191, 36, 0.4)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="1735" y="217" fill="#94a3b8" font-size="8">基础配置 / 制造</text>
+
+        <rect x="1715" y="222" width="14" height="10" rx="2" fill="rgba(34, 211, 238, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="1735" y="231" fill="#94a3b8" font-size="8">销售 / 合作伙伴</text>
+
+        <rect x="1715" y="236" width="14" height="10" rx="2" fill="rgba(52, 211, 153, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="1735" y="245" fill="#94a3b8" font-size="8">财务 / 收付款</text>
+
+        <rect x="1715" y="250" width="14" height="10" rx="2" fill="rgba(167, 139, 250, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="1735" y="259" fill="#94a3b8" font-size="8">库存 / 物料</text>
+
+        <rect x="1715" y="264" width="14" height="10" rx="2" fill="rgba(251, 146, 60, 0.4)" stroke="#fb923c" stroke-width="1"/>
+        <text x="1735" y="273" fill="#94a3b8" font-size="8">采购 / 项目</text>
+
+        <rect x="1715" y="278" width="14" height="10" rx="2" fill="rgba(251, 113, 133, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="1735" y="287" fill="#94a3b8" font-size="8">资产 / 支持</text>
+
+        <rect x="1715" y="292" width="14" height="10" rx="2" fill="rgba(100, 116, 139, 0.4)" stroke="#94a3b8" stroke-width="1"/>
+        <text x="1735" y="301" fill="#94a3b8" font-size="8">台账 / 辅助实体</text>
+
+        <rect x="1715" y="306" width="14" height="10" rx="2" fill="transparent" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="1735" y="315" fill="#94a3b8" font-size="8">Frappe 框架核心实体</text>
+
+        <!-- 子表标识 -->
+        <line x1="1715" y1="330" x2="1729" y2="330" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="1735" y="333" fill="#94a3b8" font-size="8">子表 (istable=1)</text>
+
+        <!-- 关系线 -->
+        <text x="1715" y="352" fill="#94a3b8" font-size="9" font-weight="600">关系</text>
+
+        <line x1="1715" y1="362" x2="1745" y2="362" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+        <text x="1750" y="365" fill="#94a3b8" font-size="8">销售流程转化</text>
+
+        <line x1="1715" y1="377" x2="1745" y2="377" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+        <text x="1750" y="380" fill="#94a3b8" font-size="8">采购流程转化</text>
+
+        <line x1="1715" y1="392" x2="1745" y2="392" stroke="#fbbf24" stroke-width="1" stroke-dasharray="5,3"/>
+        <text x="1750" y="395" fill="#94a3b8" font-size="8">跨公司引用</text>
+
+        <line x1="1715" y1="407" x2="1745" y2="407" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="1750" y="410" fill="#94a3b8" font-size="8">外键 Link (概略)</text>
+
+      </svg>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>统计概览</h3>
+        </div>
+        <ul>
+          <li>• 业务域：9 个（基础配置/库存/合作伙伴/财务/项目/销售/采购/制造/资产等）</li>
+          <li>• 核心主数据：20+ 实体</li>
+          <li>• 交易单据：15+ 核心单据</li>
+          <li>• 子表（行项目）：10+</li>
+          <li>• 台账/辅助实体：10+</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>核心业务流程</h3>
+        </div>
+        <ul>
+          <li>• 销售：Lead → Opportunity → Quotation → SO → DN → SI</li>
+          <li>• 采购：MR → PO → PR → PI</li>
+          <li>• 库存：Stock Entry / Stock Ledger Entry / Bin</li>
+          <li>• 财务：Payment Entry / Journal Entry / GL Entry</li>
+          <li>• 制造：BOM → Work Order → Stock Entry (生产入库)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>设计特点</h3>
+        </div>
+        <ul>
+          <li>• Frappe 框架：Link 字段 = 外键；Table 字段 = 子表（一对多）</li>
+          <li>• 动态 Link：party_type/voucher_type 等实现多态关系</li>
+          <li>• 单据转换：行子表通过前序单据 Link 字段回指，表头不直接关联</li>
+          <li>• 退货：is_return + return_against 自引用</li>
+          <li>• 修订：amended_from 自引用实现版本链</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>跨公司 / 多公司</h3>
+        </div>
+        <ul>
+          <li>• Sales Order ↔ Purchase Order（互指）</li>
+          <li>• Delivery Note ↔ Purchase Receipt（互指）</li>
+          <li>• Sales Invoice ↔ Purchase Invoice（互指）</li>
+          <li>• Journal Entry ↔ Journal Entry（互指）</li>
+          <li>• Customer/Supplier 可代表公司（represents_company）</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>树形 / 层级实体</h3>
+        </div>
+        <ul>
+          <li>• Company、Account、Warehouse、Item Group</li>
+          <li>• Cost Center、Territory、Customer Group</li>
+          <li>• Task（parent_task）、Batch（parent_batch）</li>
+          <li>• Location（资产位置）、Department</li>
+          <li>• Employee（reports_to 自引用）</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot orange"></div>
+          <h3>重要台账实体</h3>
+        </div>
+        <ul>
+          <li>• GL Entry：总账分录，所有财务单据的落点</li>
+          <li>• Stock Ledger Entry：库存台账分录</li>
+          <li>• Bin：物料-仓库 库存余额</li>
+          <li>• Item Price：物料价格表记录</li>
+          <li>• Serial and Batch Bundle：新序列号/批次模型</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="footer">
+      ERPNext ER Diagram · 基于 erpnext/ 目录 doctype JSON 定义自动提取 · 生成时间 2026-09-11
+    </p>
+  </div>
+
+  <script>
+    async function copyAsImage(btn) {
+      const orig = btn.textContent;
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        btn.textContent = '✓ Copied!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPNG(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const link = document.createElement('a');
+        link.download = 'erpnext-er-diagram.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPDF(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({ orientation, unit: 'px', format: [canvas.width, canvas.height], hotfixes: ['px_scaling'] });
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('erpnext-er-diagram.pdf');
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+  </script>
+</body>
+</html>
