@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERPNext ER Diagram</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: #020617;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    padding: 20px;
+}
+.container { max-width: 100%; margin: 0 auto; }
+.header {
+    text-align: center;
+    padding: 30px 20px 20px;
+    position: relative;
+}
+.header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+}
+.header .subtitle { font-size: 12px; color: #64748b; }
+.header .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+.toolbar {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+}
+.toolbar-toggle {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    color: #94a3b8;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.toolbar-toggle:hover {
+    background: rgba(51, 65, 85, 0.9);
+    color: #e2e8f0;
+}
+.toolbar-actions {
+    display: none;
+    position: absolute;
+    top: 44px;
+    right: 0;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 8px;
+    min-width: 180px;
+    backdrop-filter: blur(10px);
+}
+.toolbar-actions.open { display: block; }
+.toolbar-actions button {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+.toolbar-actions button:hover {
+    background: rgba(51, 65, 85, 0.5);
+    color: #e2e8f0;
+}
+.diagram-wrapper {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 24px;
+    overflow-x: auto;
+    margin-top: 16px;
+}
+.legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    padding: 24px;
+    margin-top: 24px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+}
+.legend-card {
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(30, 41, 59, 0.3);
+    border: 1px solid #1e293b;
+}
+.legend-card h4 {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #cbd5e1;
+}
+.legend-card ul {
+    list-style: none;
+    font-size: 10px;
+    color: #64748b;
+}
+.legend-card li {
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 10px;
+    color: #475569;
+}
+@media print { .toolbar { display: none !important; } }
+</style>
+</head>
+<body>
+<div class="container" id="report-container">
+  <div class="header">
+    <h1><span class="dot"></span>ERPNext ER Diagram</h1>
+    <div class="subtitle">Core Entity Relationship Diagram &#183; ' + str(len(entities)) + ' entities &#183; 12 business domains</div>
+    <div class="toolbar">
+      <button class="toolbar-toggle" onclick="toggleToolbar()">&#x22ef;</button>
+      <div class="toolbar-actions" id="toolbarActions">
+        <button onclick="copyAsImage()">&#x1f4cb; Copy as PNG</button>
+        <button onclick="downloadPNG()">&#x1f5bc; Download PNG</button>
+        <button onclick="downloadPDF()">&#x1f4c4; Download PDF</button>
+      </div>
+    </div>
+  </div>
+  <div class="diagram-wrapper">
+    <svg viewBox="0 0 1470 4282" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+        </pattern>
+        <marker id="arrow-er" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+        </marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#020617"/>
+      <rect width="100%" height="100%" fill="url(#grid)" opacity="0.5"/>
+      <!-- Swimlanes -->
+      <g id="lane-setup">
+        <rect x="40" y="80" width="1390" height="388" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#fbbf24" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="80" width="1390" height="36" rx="12" fill="#fbbf24" opacity="0.15"/>
+      <rect x="40" y="115" width="1390" height="1" fill="#fbbf24" opacity="0.4"/>
+      <text x="60" y="103" fill="#fbbf24" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 基础配置</text>
+      <text x="1410" y="103" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">12 entities</text>
+      </g>
+      <g id="lane-stock">
+        <rect x="40" y="493" width="1390" height="230" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#a78bfa" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="493" width="1390" height="36" rx="12" fill="#a78bfa" opacity="0.15"/>
+      <rect x="40" y="528" width="1390" height="1" fill="#a78bfa" opacity="0.4"/>
+      <text x="60" y="516" fill="#a78bfa" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 库存主数据</text>
+      <text x="1410" y="516" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">6 entities</text>
+      </g>
+      <g id="lane-crm">
+        <rect x="40" y="748" width="930" height="266" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="748" width="930" height="36" rx="12" fill="#22d3ee" opacity="0.15"/>
+      <rect x="40" y="783" width="930" height="1" fill="#22d3ee" opacity="0.4"/>
+      <text x="60" y="771" fill="#22d3ee" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 合作伙伴 / CRM</text>
+      <text x="950" y="771" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">4 entities</text>
+      </g>
+      <g id="lane-accounts">
+        <rect x="40" y="1039" width="1160" height="230" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#34d399" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="1039" width="1160" height="36" rx="12" fill="#34d399" opacity="0.15"/>
+      <rect x="40" y="1074" width="1160" height="1" fill="#34d399" opacity="0.4"/>
+      <text x="60" y="1062" fill="#34d399" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 财务主数据</text>
+      <text x="1180" y="1062" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">5 entities</text>
+      </g>
+      <g id="lane-projects">
+        <rect x="40" y="1294" width="930" height="266" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#fb923c" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="1294" width="930" height="36" rx="12" fill="#fb923c" opacity="0.15"/>
+      <rect x="40" y="1329" width="930" height="1" fill="#fb923c" opacity="0.4"/>
+      <text x="60" y="1317" fill="#fb923c" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 项目 / 资产 / 支持</text>
+      <text x="950" y="1317" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">4 entities</text>
+      </g>
+      <g id="lane-selling">
+        <rect x="40" y="1585" width="930" height="496" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#06b6d4" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="1585" width="930" height="36" rx="12" fill="#06b6d4" opacity="0.15"/>
+      <rect x="40" y="1620" width="930" height="1" fill="#06b6d4" opacity="0.4"/>
+      <text x="60" y="1608" fill="#06b6d4" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 销售流程</text>
+      <text x="950" y="1608" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">7 entities</text>
+      </g>
+      <g id="lane-buying">
+        <rect x="40" y="2106" width="930" height="496" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#f97316" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="2106" width="930" height="36" rx="12" fill="#f97316" opacity="0.15"/>
+      <rect x="40" y="2141" width="930" height="1" fill="#f97316" opacity="0.4"/>
+      <text x="60" y="2129" fill="#f97316" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 采购流程</text>
+      <text x="950" y="2129" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">7 entities</text>
+      </g>
+      <g id="lane-stock_tx">
+        <rect x="40" y="2627" width="930" height="284" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#8b5cf6" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="2627" width="930" height="36" rx="12" fill="#8b5cf6" opacity="0.15"/>
+      <rect x="40" y="2662" width="930" height="1" fill="#8b5cf6" opacity="0.4"/>
+      <text x="60" y="2650" fill="#8b5cf6" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 库存交易</text>
+      <text x="950" y="2650" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">4 entities</text>
+      </g>
+      <g id="lane-payments">
+        <rect x="40" y="2936" width="930" height="284" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#10b981" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="2936" width="930" height="36" rx="12" fill="#10b981" opacity="0.15"/>
+      <rect x="40" y="2971" width="930" height="1" fill="#10b981" opacity="0.4"/>
+      <text x="60" y="2959" fill="#10b981" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 收付款与总账</text>
+      <text x="950" y="2959" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">4 entities</text>
+      </g>
+      <g id="lane-manufacturing">
+        <rect x="40" y="3245" width="700" height="266" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#eab308" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="3245" width="700" height="36" rx="12" fill="#eab308" opacity="0.15"/>
+      <rect x="40" y="3280" width="700" height="1" fill="#eab308" opacity="0.4"/>
+      <text x="60" y="3268" fill="#eab308" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 制造</text>
+      <text x="720" y="3268" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">3 entities</text>
+      </g>
+      <g id="lane-assets">
+        <rect x="40" y="3536" width="1160" height="230" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#fb7185" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="3536" width="1160" height="36" rx="12" fill="#fb7185" opacity="0.15"/>
+      <rect x="40" y="3571" width="1160" height="1" fill="#fb7185" opacity="0.4"/>
+      <text x="60" y="3559" fill="#fb7185" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 资产管理</text>
+      <text x="1180" y="3559" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">5 entities</text>
+      </g>
+      <g id="lane-ledger">
+        <rect x="40" y="3791" width="700" height="266" rx="12" fill="rgba(15, 23, 42, 0.6)" stroke="#64748b" stroke-width="1.5" opacity="0.5"/>
+      <rect x="40" y="3791" width="700" height="36" rx="12" fill="#64748b" opacity="0.15"/>
+      <rect x="40" y="3826" width="700" height="1" fill="#64748b" opacity="0.4"/>
+      <text x="60" y="3814" fill="#64748b" font-size="13" font-weight="700" font-family="JetBrains Mono, monospace">&#9670; 台账辅助</text>
+      <text x="720" y="3814" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono, monospace">3 entities</text>
+      </g>
+
+      <!-- Relationships -->
+      <!-- Quotation -> Sales Order -->
+      <path d="M 260.0 1740.0 L 275.0 1740.0 L 275.0 1740.0 L 290.0 1740.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="232.2" y="1733.0" width="85.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="275.0" y="1743.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">converts to</text>
+      <!-- Sales Order -> Delivery Note -->
+      <path d="M 490.0 1740.0 L 505.0 1740.0 L 505.0 1731.0 L 520.0 1731.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="455.8" y="1728.5" width="98.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="505.0" y="1738.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">delivered via</text>
+      <!-- Sales Order -> Sales Invoice -->
+      <path d="M 490.0 1740.0 L 620.0 1740.0 L 620.0 1749.0 L 750.0 1749.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="580.5" y="1737.5" width="79.0" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="620.0" y="1747.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">billed via</text>
+      <!-- Delivery Note -> Sales Invoice -->
+      <path d="M 720.0 1731.0 L 735.0 1731.0 L 735.0 1749.0 L 750.0 1749.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="685.8" y="1733.0" width="98.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="735.0" y="1743.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">invoiced from</text>
+      <!-- Material Request -> Purchase Order -->
+      <path d="M 260.0 2234.0 L 275.0 2234.0 L 275.0 2261.0 L 290.0 2261.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="245.2" y="2240.5" width="59.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="275.0" y="2250.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">sources</text>
+      <!-- Purchase Order -> Purchase Receipt -->
+      <path d="M 490.0 2261.0 L 505.0 2261.0 L 505.0 2252.0 L 520.0 2252.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="446.0" y="2249.5" width="118.0" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="505.0" y="2259.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">received against</text>
+      <!-- Purchase Order -> Purchase Invoice -->
+      <path d="M 490.0 2261.0 L 620.0 2261.0 L 620.0 2270.0 L 750.0 2270.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="567.5" y="2258.5" width="105.0" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="620.0" y="2268.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">billed against</text>
+      <!-- Purchase Receipt -> Purchase Invoice -->
+      <path d="M 720.0 2252.0 L 735.0 2252.0 L 735.0 2270.0 L 750.0 2270.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="685.8" y="2254.0" width="98.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="735.0" y="2264.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">invoiced from</text>
+      <!-- BOM -> Work Order -->
+      <path d="M 260.0 3391.0 L 390.0 3391.0 L 390.0 3400.0 L 520.0 3400.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="360.2" y="3388.5" width="59.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="390.0" y="3398.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">used by</text>
+      <!-- Work Order -> Stock Entry -->
+      <path d="M 620.0 3309.0 L 620.0 3100.0 L 160.0 3100.0 L 160.0 2891.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="344.0" y="3093.0" width="92.0" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="390.0" y="3103.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">produces via</text>
+      <!-- Sales Invoice -> Payment Entry -->
+      <path d="M 850.0 1849.0 L 850.0 2424.5 L 160.0 2424.5 L 160.0 3000.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="455.8" y="2417.5" width="98.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="505.0" y="2427.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">reconciled by</text>
+      <!-- Purchase Invoice -> Payment Entry -->
+      <path d="M 850.0 2370.0 L 850.0 2685.0 L 160.0 2685.0 L 160.0 3000.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="455.8" y="2678.0" width="98.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="505.0" y="2688.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">reconciled by</text>
+      <!-- Sales Invoice -> GL Entry -->
+      <path d="M 850.0 1849.0 L 850.0 2852.0 L 620.0 2852.0 L 620.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="698.8" y="2845.0" width="72.5" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="735.0" y="2855.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">generates</text>
+      <!-- Purchase Invoice -> GL Entry -->
+      <path d="M 850.0 2370.0 L 850.0 3112.5 L 620.0 3112.5 L 620.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="698.8" y="3105.5" width="72.5" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="735.0" y="3115.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">generates</text>
+      <!-- Payment Entry -> GL Entry -->
+      <path d="M 160.0 3200.0 L 160.0 3527.5 L 620.0 3527.5 L 620.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="353.8" y="3520.5" width="72.5" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="390.0" y="3530.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">generates</text>
+      <!-- Journal Entry -> GL Entry -->
+      <path d="M 620.0 3164.0 L 620.0 3509.5 L 620.0 3509.5 L 620.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="583.8" y="3502.5" width="72.5" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="620.0" y="3512.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">generates</text>
+      <!-- Stock Entry -> Stock Ledger Entry -->
+      <path d="M 160.0 2891.0 L 160.0 3373.0 L 390.0 3373.0 L 390.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="238.8" y="3366.0" width="72.5" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="275.0" y="3376.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">generates</text>
+      <!-- Item -> Item Price -->
+      <path d="M 260.0 630.0 L 620.0 630.0 L 620.0 621.0 L 980.0 621.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="603.2" y="618.5" width="33.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="620.0" y="628.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">has</text>
+      <!-- Item -> Batch -->
+      <path d="M 260.0 630.0 L 505.0 630.0 L 505.0 612.0 L 750.0 612.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="488.2" y="614.0" width="33.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="505.0" y="624.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">has</text>
+      <!-- Item -> Bin -->
+      <path d="M 160.0 703.0 L 160.0 2279.0 L 160.0 2279.0 L 160.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="120.5" y="2272.0" width="79.0" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="160.0" y="2282.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">tracked in</text>
+      <!-- Warehouse -> Bin -->
+      <path d="M 620.0 667.0 L 620.0 2261.0 L 160.0 2261.0 L 160.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="363.5" y="2254.0" width="53.0" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="390.0" y="2264.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">tracks</text>
+      <!-- Item -> Stock Ledger Entry -->
+      <path d="M 160.0 703.0 L 160.0 2279.0 L 390.0 2279.0 L 390.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="255.0" y="2272.0" width="40.0" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="275.0" y="2282.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">item</text>
+      <!-- Warehouse -> Stock Ledger Entry -->
+      <path d="M 620.0 667.0 L 620.0 2261.0 L 390.0 2261.0 L 390.0 3855.0" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="6 4" marker-end="url(#arrow-er)"/>
+      <rect x="468.8" y="2254.0" width="72.5" height="14" rx="3" fill="#0f172a" stroke="#475569" stroke-width="0.5" opacity="0.9"/>
+      <text x="505.0" y="2264.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">warehouse</text>
+      <!-- Lead -> Opportunity -->
+      <path d="M 720.0 885.0 L 735.0 885.0 L 735.0 885.0 L 750.0 885.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="692.2" y="878.0" width="85.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="735.0" y="888.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">converts to</text>
+      <!-- Opportunity -> Quotation -->
+      <path d="M 850.0 958.0 L 850.0 1303.5 L 160.0 1303.5 L 160.0 1649.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="475.2" y="1296.5" width="59.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="505.0" y="1306.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">creates</text>
+      <!-- Customer -> Sales Order -->
+      <path d="M 160.0 994.0 L 160.0 1321.5 L 390.0 1321.5 L 390.0 1649.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="248.5" y="1314.5" width="53.0" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="275.0" y="1324.5" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">places</text>
+      <!-- Supplier -> Purchase Order -->
+      <path d="M 390.0 976.0 L 390.0 1573.0 L 390.0 1573.0 L 390.0 2170.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="357.0" y="1566.0" width="66.0" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="390.0" y="1576.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">receives</text>
+      <!-- Asset -> Asset Repair -->
+      <path d="M 620.0 1540.0 L 620.0 2570.0 L 160.0 2570.0 L 160.0 3600.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="373.2" y="2563.0" width="33.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="390.0" y="2573.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">has</text>
+      <!-- Asset -> Depreciation Schedule -->
+      <path d="M 620.0 1540.0 L 620.0 2570.0 L 1080.0 2570.0 L 1080.0 3600.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="833.2" y="2563.0" width="33.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="850.0" y="2573.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">has</text>
+      <!-- Asset Category -> Asset -->
+      <path d="M 620.0 3600.0 L 620.0 2570.0 L 620.0 2570.0 L 620.0 1540.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="580.5" y="2563.0" width="79.0" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="620.0" y="2573.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">classifies</text>
+      <!-- Project -> Task -->
+      <path d="M 260.0 1422.0 L 275.0 1422.0 L 275.0 1422.0 L 290.0 1422.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="258.2" y="1415.0" width="33.5" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="275.0" y="1425.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">has</text>
+      <!-- Customer -> Project -->
+      <path d="M 160.0 994.0 L 160.0 1176.0 L 160.0 1176.0 L 160.0 1358.0" fill="none" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow-er)"/>
+      <rect x="140.0" y="1169.0" width="40.0" height="14" rx="3" fill="#0f172a" stroke="#64748b" stroke-width="0.5" opacity="0.9"/>
+      <text x="160.0" y="1179.0" fill="#94a3b8" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono, monospace">owns</text>
+
+      <!-- Entities -->
+      <g id="ent-Company">
+        <rect x="60" y="144" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="60" y="144" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="60" y="144" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="60" y="166" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="160" y="160" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Company</text>
+        <text x="70" y="182.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="200.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  abbr</text>
+        <text x="70" y="218.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; default_currency</text>
+        <text x="70" y="236.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; default_warehouse</text>
+        <text x="70" y="254.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent_company</text>
+        <text x="70" y="272.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; cost_center</text>
+      </g>
+      <g id="ent-Currency">
+        <rect x="290" y="144" width="200" height="92" rx="6" fill="#0f172a"/>
+        <rect x="290" y="144" width="200" height="92" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="290" y="144" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="290" y="166" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="390" y="160" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Currency</text>
+        <text x="300" y="182.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="200.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  symbol</text>
+        <text x="300" y="218.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  fraction_units</text>
+      </g>
+      <g id="ent-UOM">
+        <rect x="520" y="144" width="200" height="92" rx="6" fill="#0f172a"/>
+        <rect x="520" y="144" width="200" height="92" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="520" y="144" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="520" y="166" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="620" y="160" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">UOM</text>
+        <text x="530" y="182.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="200.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; category</text>
+        <text x="530" y="218.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  must_be_whole_number</text>
+      </g>
+      <g id="ent-Brand">
+        <rect x="750" y="144" width="200" height="74" rx="6" fill="#0f172a"/>
+        <rect x="750" y="144" width="200" height="74" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="750" y="144" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="750" y="166" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="850" y="160" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Brand</text>
+        <text x="760" y="182.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="200.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  description</text>
+      </g>
+      <g id="ent-Address">
+        <rect x="980" y="144" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="980" y="144" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#64748b" stroke-width="2.0"/>
+        <rect x="980" y="144" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="980" y="166" width="200" height="1.5" fill="#64748b" opacity="0.5"/>
+        <text x="1080" y="160" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Address</text>
+        <text x="990" y="182.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="990" y="200.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  address_line1</text>
+        <text x="990" y="218.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  city</text>
+        <text x="990" y="236.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  country</text>
+      </g>
+      <g id="ent-Contact">
+        <rect x="1210" y="144" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="1210" y="144" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#64748b" stroke-width="2.0"/>
+        <rect x="1210" y="144" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="1210" y="166" width="200" height="1.5" fill="#64748b" opacity="0.5"/>
+        <text x="1310" y="160" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Contact</text>
+        <text x="1220" y="182.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="1220" y="200.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  first_name</text>
+        <text x="1220" y="218.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  last_name</text>
+        <text x="1220" y="236.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  email_id</text>
+      </g>
+      <g id="ent-Employee">
+        <rect x="60" y="320" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="60" y="320" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="60" y="320" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="60" y="342" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="160" y="336" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Employee</text>
+        <text x="70" y="358.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="376.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  employee_name</text>
+        <text x="70" y="394.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="412.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; reports_to</text>
+        <text x="70" y="430.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Bank">
+        <rect x="290" y="320" width="200" height="74" rx="6" fill="#0f172a"/>
+        <rect x="290" y="320" width="200" height="74" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="290" y="320" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="290" y="342" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="390" y="336" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Bank</text>
+        <text x="300" y="358.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="376.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  swift_number</text>
+      </g>
+      <g id="ent-Bank_Account">
+        <rect x="520" y="320" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="520" y="320" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="520" y="320" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="520" y="342" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="620" y="336" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Bank Account</text>
+        <text x="530" y="358.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="376.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; bank</text>
+        <text x="530" y="394.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; account</text>
+        <text x="530" y="412.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+      </g>
+      <g id="ent-Cost_Center">
+        <rect x="750" y="320" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="750" y="320" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="750" y="320" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="750" y="342" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="850" y="336" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Cost Center</text>
+        <text x="760" y="358.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="376.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent_cost_cen..</text>
+        <text x="760" y="394.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="760" y="412.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_group</text>
+      </g>
+      <g id="ent-Price_List">
+        <rect x="980" y="320" width="200" height="92" rx="6" fill="#0f172a"/>
+        <rect x="980" y="320" width="200" height="92" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="980" y="320" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="980" y="342" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="1080" y="336" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Price List</text>
+        <text x="990" y="358.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="990" y="376.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; currency</text>
+        <text x="990" y="394.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  buying_or_selling</text>
+      </g>
+      <g id="ent-Fiscal_Year">
+        <rect x="1210" y="320" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="1210" y="320" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fbbf24" stroke-width="2.0"/>
+        <rect x="1210" y="320" width="200" height="24" rx="6" fill="#fbbf24" opacity="0.2"/>
+        <rect x="1210" y="342" width="200" height="1.5" fill="#fbbf24" opacity="0.5"/>
+        <text x="1310" y="336" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Fiscal Year</text>
+        <text x="1220" y="358.0" fill="#fbbf24" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="1220" y="376.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  year_start_date</text>
+        <text x="1220" y="394.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  year_end_date</text>
+        <text x="1220" y="412.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+      </g>
+      <g id="ent-Item">
+        <rect x="60" y="557" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="60" y="557" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#a78bfa" stroke-width="2.0"/>
+        <rect x="60" y="557" width="200" height="24" rx="6" fill="#a78bfa" opacity="0.2"/>
+        <rect x="60" y="579" width="200" height="1.5" fill="#a78bfa" opacity="0.5"/>
+        <text x="160" y="573" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Item</text>
+        <text x="70" y="595.0" fill="#a78bfa" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; item_code</text>
+        <text x="70" y="613.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  item_name</text>
+        <text x="70" y="631.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_group</text>
+        <text x="70" y="649.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; stock_uom</text>
+        <text x="70" y="667.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; brand</text>
+        <text x="70" y="685.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; variant_of</text>
+      </g>
+      <g id="ent-Item_Group">
+        <rect x="290" y="557" width="200" height="92" rx="6" fill="#0f172a"/>
+        <rect x="290" y="557" width="200" height="92" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#a78bfa" stroke-width="2.0"/>
+        <rect x="290" y="557" width="200" height="24" rx="6" fill="#a78bfa" opacity="0.2"/>
+        <rect x="290" y="579" width="200" height="1.5" fill="#a78bfa" opacity="0.5"/>
+        <text x="390" y="573" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Item Group</text>
+        <text x="300" y="595.0" fill="#a78bfa" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="613.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent_item_group</text>
+        <text x="300" y="631.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_group</text>
+      </g>
+      <g id="ent-Warehouse">
+        <rect x="520" y="557" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="520" y="557" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#a78bfa" stroke-width="2.0"/>
+        <rect x="520" y="557" width="200" height="24" rx="6" fill="#a78bfa" opacity="0.2"/>
+        <rect x="520" y="579" width="200" height="1.5" fill="#a78bfa" opacity="0.5"/>
+        <text x="620" y="573" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Warehouse</text>
+        <text x="530" y="595.0" fill="#a78bfa" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="613.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent_warehouse</text>
+        <text x="530" y="631.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="530" y="649.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_group</text>
+      </g>
+      <g id="ent-Batch">
+        <rect x="750" y="557" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="750" y="557" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#a78bfa" stroke-width="2.0"/>
+        <rect x="750" y="557" width="200" height="24" rx="6" fill="#a78bfa" opacity="0.2"/>
+        <rect x="750" y="579" width="200" height="1.5" fill="#a78bfa" opacity="0.5"/>
+        <text x="850" y="573" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Batch</text>
+        <text x="760" y="595.0" fill="#a78bfa" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="613.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item</text>
+        <text x="760" y="631.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; supplier</text>
+        <text x="760" y="649.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent_batch</text>
+      </g>
+      <g id="ent-Item_Price">
+        <rect x="980" y="557" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="980" y="557" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#a78bfa" stroke-width="2.0"/>
+        <rect x="980" y="557" width="200" height="24" rx="6" fill="#a78bfa" opacity="0.2"/>
+        <rect x="980" y="579" width="200" height="1.5" fill="#a78bfa" opacity="0.5"/>
+        <text x="1080" y="573" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Item Price</text>
+        <text x="990" y="595.0" fill="#a78bfa" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="990" y="613.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="990" y="631.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; price_list</text>
+        <text x="990" y="649.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; currency</text>
+        <text x="990" y="667.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  price_list_rate</text>
+      </g>
+      <g id="ent-Serial___Batch_Bundle">
+        <rect x="1210" y="557" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="1210" y="557" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#a78bfa" stroke-width="2.0"/>
+        <rect x="1210" y="557" width="200" height="24" rx="6" fill="#a78bfa" opacity="0.2"/>
+        <rect x="1210" y="579" width="200" height="1.5" fill="#a78bfa" opacity="0.5"/>
+        <text x="1310" y="573" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Serial &amp; Batch Bundle</text>
+        <text x="1220" y="595.0" fill="#a78bfa" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="1220" y="613.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="1220" y="631.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; warehouse</text>
+        <text x="1220" y="649.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  voucher_type</text>
+        <text x="1220" y="667.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; voucher_no (dyn)</text>
+      </g>
+      <g id="ent-Customer">
+        <rect x="60" y="812" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="60" y="812" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#22d3ee" stroke-width="2.0"/>
+        <rect x="60" y="812" width="200" height="24" rx="6" fill="#22d3ee" opacity="0.2"/>
+        <rect x="60" y="834" width="200" height="1.5" fill="#22d3ee" opacity="0.5"/>
+        <text x="160" y="828" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Customer</text>
+        <text x="70" y="850.0" fill="#22d3ee" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="868.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  customer_name</text>
+        <text x="70" y="886.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; customer_group</text>
+        <text x="70" y="904.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; default_currency</text>
+        <text x="70" y="922.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; default_price_l..</text>
+        <text x="70" y="940.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; primary_address</text>
+        <text x="70" y="958.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; primary_contact</text>
+        <text x="70" y="976.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+      </g>
+      <g id="ent-Supplier">
+        <rect x="290" y="812" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="290" y="812" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#22d3ee" stroke-width="2.0"/>
+        <rect x="290" y="812" width="200" height="24" rx="6" fill="#22d3ee" opacity="0.2"/>
+        <rect x="290" y="834" width="200" height="1.5" fill="#22d3ee" opacity="0.5"/>
+        <text x="390" y="828" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Supplier</text>
+        <text x="300" y="850.0" fill="#22d3ee" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="868.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  supplier_name</text>
+        <text x="300" y="886.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; supplier_group</text>
+        <text x="300" y="904.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; default_currency</text>
+        <text x="300" y="922.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; default_price_l..</text>
+        <text x="300" y="940.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; primary_address</text>
+        <text x="300" y="958.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; primary_contact</text>
+      </g>
+      <g id="ent-Lead">
+        <rect x="520" y="812" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="520" y="812" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#22d3ee" stroke-width="2.0"/>
+        <rect x="520" y="812" width="200" height="24" rx="6" fill="#22d3ee" opacity="0.2"/>
+        <rect x="520" y="834" width="200" height="1.5" fill="#22d3ee" opacity="0.5"/>
+        <text x="620" y="828" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Lead</text>
+        <text x="530" y="850.0" fill="#22d3ee" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="868.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  lead_name</text>
+        <text x="530" y="886.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  company_name</text>
+        <text x="530" y="904.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  email_id</text>
+        <text x="530" y="922.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="530" y="940.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+      </g>
+      <g id="ent-Opportunity">
+        <rect x="750" y="812" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="750" y="812" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#22d3ee" stroke-width="2.0"/>
+        <rect x="750" y="812" width="200" height="24" rx="6" fill="#22d3ee" opacity="0.2"/>
+        <rect x="750" y="834" width="200" height="1.5" fill="#22d3ee" opacity="0.5"/>
+        <text x="850" y="828" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Opportunity</text>
+        <text x="760" y="850.0" fill="#22d3ee" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="868.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  opportunity_from</text>
+        <text x="760" y="886.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; party_name (dyn)</text>
+        <text x="760" y="904.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; sales_stage</text>
+        <text x="760" y="922.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; currency</text>
+        <text x="760" y="940.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+      </g>
+      <g id="ent-Account">
+        <rect x="60" y="1103" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="60" y="1103" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#34d399" stroke-width="2.0"/>
+        <rect x="60" y="1103" width="200" height="24" rx="6" fill="#34d399" opacity="0.2"/>
+        <rect x="60" y="1125" width="200" height="1.5" fill="#34d399" opacity="0.5"/>
+        <text x="160" y="1119" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Account</text>
+        <text x="70" y="1141.0" fill="#34d399" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="1159.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent_account</text>
+        <text x="70" y="1177.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="1195.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; account_currency</text>
+        <text x="70" y="1213.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  account_type</text>
+        <text x="70" y="1231.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_group</text>
+      </g>
+      <g id="ent-Accounting_Period">
+        <rect x="290" y="1103" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="290" y="1103" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#34d399" stroke-width="2.0"/>
+        <rect x="290" y="1103" width="200" height="24" rx="6" fill="#34d399" opacity="0.2"/>
+        <rect x="290" y="1125" width="200" height="1.5" fill="#34d399" opacity="0.5"/>
+        <text x="390" y="1119" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Accounting Period</text>
+        <text x="300" y="1141.0" fill="#34d399" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="1159.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  start_date</text>
+        <text x="300" y="1177.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  end_date</text>
+        <text x="300" y="1195.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+      </g>
+      <g id="ent-Taxes___Charges">
+        <rect x="520" y="1103" width="200" height="92" rx="6" fill="#0f172a"/>
+        <rect x="520" y="1103" width="200" height="92" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#34d399" stroke-width="2.0"/>
+        <rect x="520" y="1103" width="200" height="24" rx="6" fill="#34d399" opacity="0.2"/>
+        <rect x="520" y="1125" width="200" height="1.5" fill="#34d399" opacity="0.5"/>
+        <text x="620" y="1119" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Taxes &amp; Charges</text>
+        <text x="530" y="1141.0" fill="#34d399" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="1159.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; account_head</text>
+        <text x="530" y="1177.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rate</text>
+      </g>
+      <g id="ent-Pricing_Rule">
+        <rect x="750" y="1103" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="750" y="1103" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#34d399" stroke-width="2.0"/>
+        <rect x="750" y="1103" width="200" height="24" rx="6" fill="#34d399" opacity="0.2"/>
+        <rect x="750" y="1125" width="200" height="1.5" fill="#34d399" opacity="0.5"/>
+        <text x="850" y="1119" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Pricing Rule</text>
+        <text x="760" y="1141.0" fill="#34d399" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="1159.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  apply_on</text>
+        <text x="760" y="1177.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rule_type</text>
+        <text x="760" y="1195.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  discount_percentage</text>
+        <text x="760" y="1213.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; price_list</text>
+      </g>
+      <g id="ent-Budget">
+        <rect x="980" y="1103" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="980" y="1103" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#34d399" stroke-width="2.0"/>
+        <rect x="980" y="1103" width="200" height="24" rx="6" fill="#34d399" opacity="0.2"/>
+        <rect x="980" y="1125" width="200" height="1.5" fill="#34d399" opacity="0.5"/>
+        <text x="1080" y="1119" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Budget</text>
+        <text x="990" y="1141.0" fill="#34d399" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="990" y="1159.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="990" y="1177.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; cost_center</text>
+        <text x="990" y="1195.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; fiscal_year</text>
+        <text x="990" y="1213.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  budget_amount</text>
+      </g>
+      <g id="ent-Project">
+        <rect x="60" y="1358" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="60" y="1358" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb923c" stroke-width="2.0"/>
+        <rect x="60" y="1358" width="200" height="24" rx="6" fill="#fb923c" opacity="0.2"/>
+        <rect x="60" y="1380" width="200" height="1.5" fill="#fb923c" opacity="0.5"/>
+        <text x="160" y="1374" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Project</text>
+        <text x="70" y="1396.0" fill="#fb923c" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="1414.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  project_name</text>
+        <text x="70" y="1432.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; customer</text>
+        <text x="70" y="1450.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="1468.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Task">
+        <rect x="290" y="1358" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="290" y="1358" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb923c" stroke-width="2.0"/>
+        <rect x="290" y="1358" width="200" height="24" rx="6" fill="#fb923c" opacity="0.2"/>
+        <rect x="290" y="1380" width="200" height="1.5" fill="#fb923c" opacity="0.5"/>
+        <text x="390" y="1374" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Task</text>
+        <text x="300" y="1396.0" fill="#fb923c" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="1414.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  subject</text>
+        <text x="300" y="1432.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; project</text>
+        <text x="300" y="1450.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent_task</text>
+        <text x="300" y="1468.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Asset">
+        <rect x="520" y="1358" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="520" y="1358" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb923c" stroke-width="2.0"/>
+        <rect x="520" y="1358" width="200" height="24" rx="6" fill="#fb923c" opacity="0.2"/>
+        <rect x="520" y="1380" width="200" height="1.5" fill="#fb923c" opacity="0.5"/>
+        <text x="620" y="1374" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Asset</text>
+        <text x="530" y="1396.0" fill="#fb923c" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="1414.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  asset_name</text>
+        <text x="530" y="1432.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="530" y="1450.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; asset_category</text>
+        <text x="530" y="1468.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="530" y="1486.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; supplier</text>
+        <text x="530" y="1504.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; custodian</text>
+        <text x="530" y="1522.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; location</text>
+      </g>
+      <g id="ent-Issue">
+        <rect x="750" y="1358" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="750" y="1358" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb923c" stroke-width="2.0"/>
+        <rect x="750" y="1358" width="200" height="24" rx="6" fill="#fb923c" opacity="0.2"/>
+        <rect x="750" y="1380" width="200" height="1.5" fill="#fb923c" opacity="0.5"/>
+        <text x="850" y="1374" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Issue</text>
+        <text x="760" y="1396.0" fill="#fb923c" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="1414.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  subject</text>
+        <text x="760" y="1432.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="760" y="1450.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; customer</text>
+        <text x="760" y="1468.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; project</text>
+        <text x="760" y="1486.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+      </g>
+      <g id="ent-Quotation">
+        <rect x="60" y="1649" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="60" y="1649" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#06b6d4" stroke-width="2.0"/>
+        <rect x="60" y="1649" width="200" height="24" rx="6" fill="#06b6d4" opacity="0.2"/>
+        <rect x="60" y="1671" width="200" height="1.5" fill="#06b6d4" opacity="0.5"/>
+        <text x="160" y="1665" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Quotation</text>
+        <text x="70" y="1687.0" fill="#06b6d4" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="1705.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; party_name (dyn)</text>
+        <text x="70" y="1723.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; opportunity</text>
+        <text x="70" y="1741.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="1759.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; currency</text>
+        <text x="70" y="1777.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; selling_price_l..</text>
+        <text x="70" y="1795.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  grand_total</text>
+        <text x="70" y="1813.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Sales_Order">
+        <rect x="290" y="1649" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="290" y="1649" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#06b6d4" stroke-width="2.0"/>
+        <rect x="290" y="1649" width="200" height="24" rx="6" fill="#06b6d4" opacity="0.2"/>
+        <rect x="290" y="1671" width="200" height="1.5" fill="#06b6d4" opacity="0.5"/>
+        <text x="390" y="1665" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Sales Order</text>
+        <text x="300" y="1687.0" fill="#06b6d4" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="1705.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; customer</text>
+        <text x="300" y="1723.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="300" y="1741.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; currency</text>
+        <text x="300" y="1759.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; set_warehouse</text>
+        <text x="300" y="1777.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  grand_total</text>
+        <text x="300" y="1795.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="300" y="1813.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  delivery_status</text>
+      </g>
+      <g id="ent-Delivery_Note">
+        <rect x="520" y="1649" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="520" y="1649" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#06b6d4" stroke-width="2.0"/>
+        <rect x="520" y="1649" width="200" height="24" rx="6" fill="#06b6d4" opacity="0.2"/>
+        <rect x="520" y="1671" width="200" height="1.5" fill="#06b6d4" opacity="0.5"/>
+        <text x="620" y="1665" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Delivery Note</text>
+        <text x="530" y="1687.0" fill="#06b6d4" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="1705.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; customer</text>
+        <text x="530" y="1723.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="530" y="1741.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; set_warehouse</text>
+        <text x="530" y="1759.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  grand_total</text>
+        <text x="530" y="1777.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="530" y="1795.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_return</text>
+      </g>
+      <g id="ent-Sales_Invoice">
+        <rect x="750" y="1649" width="200" height="200" rx="6" fill="#0f172a"/>
+        <rect x="750" y="1649" width="200" height="200" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#06b6d4" stroke-width="2.0"/>
+        <rect x="750" y="1649" width="200" height="24" rx="6" fill="#06b6d4" opacity="0.2"/>
+        <rect x="750" y="1671" width="200" height="1.5" fill="#06b6d4" opacity="0.5"/>
+        <text x="850" y="1665" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Sales Invoice</text>
+        <text x="760" y="1687.0" fill="#06b6d4" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="1705.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; customer</text>
+        <text x="760" y="1723.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="760" y="1741.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; debit_to</text>
+        <text x="760" y="1759.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; currency</text>
+        <text x="760" y="1777.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  grand_total</text>
+        <text x="760" y="1795.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  outstanding_amount</text>
+        <text x="760" y="1813.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="760" y="1831.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_return</text>
+      </g>
+      <g id="ent-Sales_Order_Item">
+        <rect x="60" y="1879" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="60" y="1879" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#06b6d4" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="60" y="1879" width="200" height="24" rx="6" fill="#06b6d4" opacity="0.2"/>
+        <rect x="60" y="1901" width="200" height="1.5" fill="#06b6d4" opacity="0.5"/>
+        <text x="160" y="1895" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Sales Order Item</text>
+        <text x="70" y="1917.0" fill="#06b6d4" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="1935.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="70" y="1953.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="70" y="1971.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="70" y="1989.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rate</text>
+        <text x="70" y="2007.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  amount</text>
+      </g>
+      <g id="ent-Delivery_Note_Item">
+        <rect x="290" y="1879" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="290" y="1879" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#06b6d4" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="290" y="1879" width="200" height="24" rx="6" fill="#06b6d4" opacity="0.2"/>
+        <rect x="290" y="1901" width="200" height="1.5" fill="#06b6d4" opacity="0.5"/>
+        <text x="390" y="1895" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Delivery Note Item</text>
+        <text x="300" y="1917.0" fill="#06b6d4" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="1935.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="300" y="1953.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="300" y="1971.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="300" y="1989.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rate</text>
+        <text x="300" y="2007.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  amount</text>
+        <text x="300" y="2025.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; sales_order</text>
+      </g>
+      <g id="ent-Sales_Invoice_Item">
+        <rect x="520" y="1879" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="520" y="1879" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#06b6d4" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="520" y="1879" width="200" height="24" rx="6" fill="#06b6d4" opacity="0.2"/>
+        <rect x="520" y="1901" width="200" height="1.5" fill="#06b6d4" opacity="0.5"/>
+        <text x="620" y="1895" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Sales Invoice Item</text>
+        <text x="530" y="1917.0" fill="#06b6d4" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="1935.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="530" y="1953.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="530" y="1971.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="530" y="1989.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rate</text>
+        <text x="530" y="2007.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  amount</text>
+        <text x="530" y="2025.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; sales_order</text>
+        <text x="530" y="2043.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; delivery_note</text>
+      </g>
+      <g id="ent-Material_Request">
+        <rect x="60" y="2170" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="60" y="2170" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#f97316" stroke-width="2.0"/>
+        <rect x="60" y="2170" width="200" height="24" rx="6" fill="#f97316" opacity="0.2"/>
+        <rect x="60" y="2192" width="200" height="1.5" fill="#f97316" opacity="0.5"/>
+        <text x="160" y="2186" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Material Request</text>
+        <text x="70" y="2208.0" fill="#f97316" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="2226.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  material_request_type</text>
+        <text x="70" y="2244.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="2262.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; set_warehouse</text>
+        <text x="70" y="2280.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Purchase_Order">
+        <rect x="290" y="2170" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="290" y="2170" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#f97316" stroke-width="2.0"/>
+        <rect x="290" y="2170" width="200" height="24" rx="6" fill="#f97316" opacity="0.2"/>
+        <rect x="290" y="2192" width="200" height="1.5" fill="#f97316" opacity="0.5"/>
+        <text x="390" y="2186" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Purchase Order</text>
+        <text x="300" y="2208.0" fill="#f97316" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="2226.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; supplier</text>
+        <text x="300" y="2244.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="300" y="2262.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; currency</text>
+        <text x="300" y="2280.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; set_warehouse</text>
+        <text x="300" y="2298.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  grand_total</text>
+        <text x="300" y="2316.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="300" y="2334.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  delivery_status</text>
+      </g>
+      <g id="ent-Purchase_Receipt">
+        <rect x="520" y="2170" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="520" y="2170" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#f97316" stroke-width="2.0"/>
+        <rect x="520" y="2170" width="200" height="24" rx="6" fill="#f97316" opacity="0.2"/>
+        <rect x="520" y="2192" width="200" height="1.5" fill="#f97316" opacity="0.5"/>
+        <text x="620" y="2186" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Purchase Receipt</text>
+        <text x="530" y="2208.0" fill="#f97316" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="2226.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; supplier</text>
+        <text x="530" y="2244.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="530" y="2262.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; set_warehouse</text>
+        <text x="530" y="2280.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  grand_total</text>
+        <text x="530" y="2298.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="530" y="2316.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_return</text>
+      </g>
+      <g id="ent-Purchase_Invoice">
+        <rect x="750" y="2170" width="200" height="200" rx="6" fill="#0f172a"/>
+        <rect x="750" y="2170" width="200" height="200" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#f97316" stroke-width="2.0"/>
+        <rect x="750" y="2170" width="200" height="24" rx="6" fill="#f97316" opacity="0.2"/>
+        <rect x="750" y="2192" width="200" height="1.5" fill="#f97316" opacity="0.5"/>
+        <text x="850" y="2186" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Purchase Invoice</text>
+        <text x="760" y="2208.0" fill="#f97316" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="2226.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; supplier</text>
+        <text x="760" y="2244.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="760" y="2262.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; credit_to</text>
+        <text x="760" y="2280.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; currency</text>
+        <text x="760" y="2298.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  grand_total</text>
+        <text x="760" y="2316.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  outstanding_amount</text>
+        <text x="760" y="2334.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="760" y="2352.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_return</text>
+      </g>
+      <g id="ent-Purchase_Order_Item">
+        <rect x="60" y="2400" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="60" y="2400" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#f97316" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="60" y="2400" width="200" height="24" rx="6" fill="#f97316" opacity="0.2"/>
+        <rect x="60" y="2422" width="200" height="1.5" fill="#f97316" opacity="0.5"/>
+        <text x="160" y="2416" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Purchase Order Item</text>
+        <text x="70" y="2438.0" fill="#f97316" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="2456.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="70" y="2474.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="70" y="2492.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="70" y="2510.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rate</text>
+        <text x="70" y="2528.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  amount</text>
+        <text x="70" y="2546.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; material_request</text>
+      </g>
+      <g id="ent-Purchase_Receipt_Item">
+        <rect x="290" y="2400" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="290" y="2400" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#f97316" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="290" y="2400" width="200" height="24" rx="6" fill="#f97316" opacity="0.2"/>
+        <rect x="290" y="2422" width="200" height="1.5" fill="#f97316" opacity="0.5"/>
+        <text x="390" y="2416" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Purchase Receipt Item</text>
+        <text x="300" y="2438.0" fill="#f97316" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="2456.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="300" y="2474.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="300" y="2492.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="300" y="2510.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rate</text>
+        <text x="300" y="2528.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  amount</text>
+        <text x="300" y="2546.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; purchase_order</text>
+      </g>
+      <g id="ent-Purchase_Invoice_Item">
+        <rect x="520" y="2400" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="520" y="2400" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#f97316" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="520" y="2400" width="200" height="24" rx="6" fill="#f97316" opacity="0.2"/>
+        <rect x="520" y="2422" width="200" height="1.5" fill="#f97316" opacity="0.5"/>
+        <text x="620" y="2416" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Purchase Invoice Item</text>
+        <text x="530" y="2438.0" fill="#f97316" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="2456.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="530" y="2474.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="530" y="2492.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="530" y="2510.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rate</text>
+        <text x="530" y="2528.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  amount</text>
+        <text x="530" y="2546.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; purchase_order</text>
+        <text x="530" y="2564.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; purchase_receipt</text>
+      </g>
+      <g id="ent-Stock_Entry">
+        <rect x="60" y="2691" width="200" height="200" rx="6" fill="#0f172a"/>
+        <rect x="60" y="2691" width="200" height="200" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#8b5cf6" stroke-width="2.0"/>
+        <rect x="60" y="2691" width="200" height="24" rx="6" fill="#8b5cf6" opacity="0.2"/>
+        <rect x="60" y="2713" width="200" height="1.5" fill="#8b5cf6" opacity="0.5"/>
+        <text x="160" y="2707" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Stock Entry</text>
+        <text x="70" y="2729.0" fill="#8b5cf6" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="2747.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  stock_entry_type</text>
+        <text x="70" y="2765.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="2783.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; from_warehouse</text>
+        <text x="70" y="2801.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; to_warehouse</text>
+        <text x="70" y="2819.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; bom_no</text>
+        <text x="70" y="2837.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; work_order</text>
+        <text x="70" y="2855.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  total_outgoing_value</text>
+        <text x="70" y="2873.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Stock_Entry_Detail">
+        <rect x="290" y="2691" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="290" y="2691" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#8b5cf6" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="290" y="2691" width="200" height="24" rx="6" fill="#8b5cf6" opacity="0.2"/>
+        <rect x="290" y="2713" width="200" height="1.5" fill="#8b5cf6" opacity="0.5"/>
+        <text x="390" y="2707" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Stock Entry Detail</text>
+        <text x="300" y="2729.0" fill="#8b5cf6" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="2747.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="300" y="2765.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="300" y="2783.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; s_warehouse</text>
+        <text x="300" y="2801.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; t_warehouse</text>
+        <text x="300" y="2819.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="300" y="2837.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  basic_rate</text>
+        <text x="300" y="2855.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; batch_no</text>
+      </g>
+      <g id="ent-Quality_Inspection">
+        <rect x="520" y="2691" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="520" y="2691" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#8b5cf6" stroke-width="2.0"/>
+        <rect x="520" y="2691" width="200" height="24" rx="6" fill="#8b5cf6" opacity="0.2"/>
+        <rect x="520" y="2713" width="200" height="1.5" fill="#8b5cf6" opacity="0.5"/>
+        <text x="620" y="2707" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Quality Inspection</text>
+        <text x="530" y="2729.0" fill="#8b5cf6" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="2747.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  inspection_type</text>
+        <text x="530" y="2765.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  reference_type</text>
+        <text x="530" y="2783.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; reference_name ..</text>
+        <text x="530" y="2801.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="530" y="2819.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Landed_Cost_Voucher">
+        <rect x="750" y="2691" width="200" height="110" rx="6" fill="#0f172a"/>
+        <rect x="750" y="2691" width="200" height="110" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#8b5cf6" stroke-width="2.0"/>
+        <rect x="750" y="2691" width="200" height="24" rx="6" fill="#8b5cf6" opacity="0.2"/>
+        <rect x="750" y="2713" width="200" height="1.5" fill="#8b5cf6" opacity="0.5"/>
+        <text x="850" y="2707" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Landed Cost Voucher</text>
+        <text x="760" y="2729.0" fill="#8b5cf6" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="2747.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="760" y="2765.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+        <text x="760" y="2783.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  total_taxes_and_charges</text>
+      </g>
+      <g id="ent-Payment_Entry">
+        <rect x="60" y="3000" width="200" height="200" rx="6" fill="#0f172a"/>
+        <rect x="60" y="3000" width="200" height="200" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#10b981" stroke-width="2.0"/>
+        <rect x="60" y="3000" width="200" height="24" rx="6" fill="#10b981" opacity="0.2"/>
+        <rect x="60" y="3022" width="200" height="1.5" fill="#10b981" opacity="0.5"/>
+        <text x="160" y="3016" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Payment Entry</text>
+        <text x="70" y="3038.0" fill="#10b981" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="3056.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  payment_type</text>
+        <text x="70" y="3074.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  party_type</text>
+        <text x="70" y="3092.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; party (dyn)</text>
+        <text x="70" y="3110.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="3128.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; paid_from</text>
+        <text x="70" y="3146.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; paid_to</text>
+        <text x="70" y="3164.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  paid_amount</text>
+        <text x="70" y="3182.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Payment_Entry_Reference">
+        <rect x="290" y="3000" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="290" y="3000" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#10b981" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="290" y="3000" width="200" height="24" rx="6" fill="#10b981" opacity="0.2"/>
+        <rect x="290" y="3022" width="200" height="1.5" fill="#10b981" opacity="0.5"/>
+        <text x="390" y="3016" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Payment Entry Reference</text>
+        <text x="300" y="3038.0" fill="#10b981" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="3056.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="300" y="3074.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  reference_doctype</text>
+        <text x="300" y="3092.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; reference_name ..</text>
+        <text x="300" y="3110.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  allocated_amount</text>
+        <text x="300" y="3128.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  outstanding_amount</text>
+      </g>
+      <g id="ent-Journal_Entry">
+        <rect x="520" y="3000" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="520" y="3000" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#10b981" stroke-width="2.0"/>
+        <rect x="520" y="3000" width="200" height="24" rx="6" fill="#10b981" opacity="0.2"/>
+        <rect x="520" y="3022" width="200" height="1.5" fill="#10b981" opacity="0.5"/>
+        <text x="620" y="3016" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Journal Entry</text>
+        <text x="530" y="3038.0" fill="#10b981" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="3056.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  voucher_type</text>
+        <text x="530" y="3074.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="530" y="3092.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  total_debit</text>
+        <text x="530" y="3110.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  total_credit</text>
+        <text x="530" y="3128.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  posting_date</text>
+        <text x="530" y="3146.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Journal_Entry_Account">
+        <rect x="750" y="3000" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="750" y="3000" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#10b981" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="750" y="3000" width="200" height="24" rx="6" fill="#10b981" opacity="0.2"/>
+        <rect x="750" y="3022" width="200" height="1.5" fill="#10b981" opacity="0.5"/>
+        <text x="850" y="3016" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Journal Entry Account</text>
+        <text x="760" y="3038.0" fill="#10b981" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="3056.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="760" y="3074.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; account</text>
+        <text x="760" y="3092.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  debit</text>
+        <text x="760" y="3110.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  credit</text>
+        <text x="760" y="3128.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  party_type</text>
+        <text x="760" y="3146.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; party (dyn)</text>
+      </g>
+      <g id="ent-BOM">
+        <rect x="60" y="3309" width="200" height="164" rx="6" fill="#0f172a"/>
+        <rect x="60" y="3309" width="200" height="164" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#eab308" stroke-width="2.0"/>
+        <rect x="60" y="3309" width="200" height="24" rx="6" fill="#eab308" opacity="0.2"/>
+        <rect x="60" y="3331" width="200" height="1.5" fill="#eab308" opacity="0.5"/>
+        <text x="160" y="3325" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">BOM</text>
+        <text x="70" y="3347.0" fill="#eab308" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="3365.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item</text>
+        <text x="70" y="3383.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  quantity</text>
+        <text x="70" y="3401.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; uom</text>
+        <text x="70" y="3419.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="3437.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  total_cost</text>
+        <text x="70" y="3455.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_active</text>
+      </g>
+      <g id="ent-BOM_Item">
+        <rect x="290" y="3309" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="290" y="3309" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#eab308" stroke-width="1.0" stroke-dasharray="4 3"/>
+        <rect x="290" y="3309" width="200" height="24" rx="6" fill="#eab308" opacity="0.2"/>
+        <rect x="290" y="3331" width="200" height="1.5" fill="#eab308" opacity="0.5"/>
+        <text x="390" y="3325" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">BOM Item</text>
+        <text x="300" y="3347.0" fill="#eab308" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="3365.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent</text>
+        <text x="300" y="3383.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="300" y="3401.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="300" y="3419.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  rate</text>
+        <text x="300" y="3437.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  amount</text>
+      </g>
+      <g id="ent-Work_Order">
+        <rect x="520" y="3309" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="520" y="3309" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#eab308" stroke-width="2.0"/>
+        <rect x="520" y="3309" width="200" height="24" rx="6" fill="#eab308" opacity="0.2"/>
+        <rect x="520" y="3331" width="200" height="1.5" fill="#eab308" opacity="0.5"/>
+        <text x="620" y="3325" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Work Order</text>
+        <text x="530" y="3347.0" fill="#eab308" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="3365.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; production_item</text>
+        <text x="530" y="3383.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; bom_no</text>
+        <text x="530" y="3401.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="530" y="3419.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty</text>
+        <text x="530" y="3437.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; wip_warehouse</text>
+        <text x="530" y="3455.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; fg_warehouse</text>
+        <text x="530" y="3473.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Asset_Repair">
+        <rect x="60" y="3600" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="60" y="3600" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb7185" stroke-width="2.0"/>
+        <rect x="60" y="3600" width="200" height="24" rx="6" fill="#fb7185" opacity="0.2"/>
+        <rect x="60" y="3622" width="200" height="1.5" fill="#fb7185" opacity="0.5"/>
+        <text x="160" y="3616" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Asset Repair</text>
+        <text x="70" y="3638.0" fill="#fb7185" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="3656.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; asset</text>
+        <text x="70" y="3674.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="70" y="3692.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; cost_center</text>
+        <text x="70" y="3710.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Asset_Movement">
+        <rect x="290" y="3600" width="200" height="128" rx="6" fill="#0f172a"/>
+        <rect x="290" y="3600" width="200" height="128" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb7185" stroke-width="2.0"/>
+        <rect x="290" y="3600" width="200" height="24" rx="6" fill="#fb7185" opacity="0.2"/>
+        <rect x="290" y="3622" width="200" height="1.5" fill="#fb7185" opacity="0.5"/>
+        <text x="390" y="3616" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Asset Movement</text>
+        <text x="300" y="3638.0" fill="#fb7185" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="3656.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="300" y="3674.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  purpose</text>
+        <text x="300" y="3692.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; reference_name ..</text>
+        <text x="300" y="3710.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Asset_Category">
+        <rect x="520" y="3600" width="200" height="92" rx="6" fill="#0f172a"/>
+        <rect x="520" y="3600" width="200" height="92" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb7185" stroke-width="2.0"/>
+        <rect x="520" y="3600" width="200" height="24" rx="6" fill="#fb7185" opacity="0.2"/>
+        <rect x="520" y="3622" width="200" height="1.5" fill="#fb7185" opacity="0.5"/>
+        <text x="620" y="3616" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Asset Category</text>
+        <text x="530" y="3638.0" fill="#fb7185" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="3656.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  depreciation_method</text>
+        <text x="530" y="3674.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  total_useful_life</text>
+      </g>
+      <g id="ent-Location">
+        <rect x="750" y="3600" width="200" height="92" rx="6" fill="#0f172a"/>
+        <rect x="750" y="3600" width="200" height="92" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb7185" stroke-width="2.0"/>
+        <rect x="750" y="3600" width="200" height="24" rx="6" fill="#fb7185" opacity="0.2"/>
+        <rect x="750" y="3622" width="200" height="1.5" fill="#fb7185" opacity="0.5"/>
+        <text x="850" y="3616" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Location</text>
+        <text x="760" y="3638.0" fill="#fb7185" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="760" y="3656.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; parent_location</text>
+        <text x="760" y="3674.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  is_group</text>
+      </g>
+      <g id="ent-Depreciation_Schedule">
+        <rect x="980" y="3600" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="980" y="3600" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#fb7185" stroke-width="2.0"/>
+        <rect x="980" y="3600" width="200" height="24" rx="6" fill="#fb7185" opacity="0.2"/>
+        <rect x="980" y="3622" width="200" height="1.5" fill="#fb7185" opacity="0.5"/>
+        <text x="1080" y="3616" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Depreciation Schedule</text>
+        <text x="990" y="3638.0" fill="#fb7185" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="990" y="3656.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; asset</text>
+        <text x="990" y="3674.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  schedule_date</text>
+        <text x="990" y="3692.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  depreciation_amount</text>
+        <text x="990" y="3710.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; journal_entry</text>
+        <text x="990" y="3728.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  status</text>
+      </g>
+      <g id="ent-Bin">
+        <rect x="60" y="3855" width="200" height="146" rx="6" fill="#0f172a"/>
+        <rect x="60" y="3855" width="200" height="146" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#64748b" stroke-width="2.0"/>
+        <rect x="60" y="3855" width="200" height="24" rx="6" fill="#64748b" opacity="0.2"/>
+        <rect x="60" y="3877" width="200" height="1.5" fill="#64748b" opacity="0.5"/>
+        <text x="160" y="3871" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Bin</text>
+        <text x="70" y="3893.0" fill="#64748b" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="70" y="3911.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="70" y="3929.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; warehouse</text>
+        <text x="70" y="3947.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  actual_qty</text>
+        <text x="70" y="3965.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  projected_qty</text>
+        <text x="70" y="3983.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  valuation_rate</text>
+      </g>
+      <g id="ent-Stock_Ledger_Entry">
+        <rect x="290" y="3855" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="290" y="3855" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#64748b" stroke-width="2.0"/>
+        <rect x="290" y="3855" width="200" height="24" rx="6" fill="#64748b" opacity="0.2"/>
+        <rect x="290" y="3877" width="200" height="1.5" fill="#64748b" opacity="0.5"/>
+        <text x="390" y="3871" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">Stock Ledger Entry</text>
+        <text x="300" y="3893.0" fill="#64748b" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="300" y="3911.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; item_code</text>
+        <text x="300" y="3929.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; warehouse</text>
+        <text x="300" y="3947.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  actual_qty</text>
+        <text x="300" y="3965.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  voucher_type</text>
+        <text x="300" y="3983.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; voucher_no (dyn)</text>
+        <text x="300" y="4001.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  qty_after_transaction</text>
+        <text x="300" y="4019.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  valuation_rate</text>
+      </g>
+      <g id="ent-GL_Entry">
+        <rect x="520" y="3855" width="200" height="182" rx="6" fill="#0f172a"/>
+        <rect x="520" y="3855" width="200" height="182" rx="6" fill="rgba(15, 23, 42, 0.85)" stroke="#64748b" stroke-width="2.0"/>
+        <rect x="520" y="3855" width="200" height="24" rx="6" fill="#64748b" opacity="0.2"/>
+        <rect x="520" y="3877" width="200" height="1.5" fill="#64748b" opacity="0.5"/>
+        <text x="620" y="3871" fill="white" font-size="11" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">GL Entry</text>
+        <text x="530" y="3893.0" fill="#64748b" font-size="9.5" font-weight="700" font-family="JetBrains Mono, monospace">&#x1f511; name</text>
+        <text x="530" y="3911.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; account</text>
+        <text x="530" y="3929.0" fill="#94a3b8" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2192; company</text>
+        <text x="530" y="3947.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  debit</text>
+        <text x="530" y="3965.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  credit</text>
+        <text x="530" y="3983.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  voucher_type</text>
+        <text x="530" y="4001.0" fill="#fbbf24" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  &#x2194; voucher_no (dyn)</text>
+        <text x="530" y="4019.0" fill="#cbd5e1" font-size="9.5" font-weight="400" font-family="JetBrains Mono, monospace">  posting_date</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="legend">
+    <div class="legend-card">
+      <h4>&#x1f5c2; Business Domains</h4>
+      <ul>
+        <li><span class="legend-dot" style="background:#fbbf24"></span>Setup / Manufacturing</li>
+        <li><span class="legend-dot" style="background:#a78bfa"></span>Stock Master / Transactions</li>
+        <li><span class="legend-dot" style="background:#22d3ee"></span>Partners / CRM / Selling</li>
+        <li><span class="legend-dot" style="background:#34d399"></span>Accounts / Payments / GL</li>
+        <li><span class="legend-dot" style="background:#fb923c"></span>Projects / Buying</li>
+        <li><span class="legend-dot" style="background:#fb7185"></span>Asset Management</li>
+      </ul>
+    </div>
+    <div class="legend-card">
+      <h4>&#x1f511; Field Types</h4>
+      <ul>
+        <li><span class="legend-dot" style="background:#fbbf24"></span>Primary Key (PK)</li>
+        <li><span class="legend-dot" style="background:#94a3b8"></span>Foreign Key (Link)</li>
+        <li><span class="legend-dot" style="background:#cbd5e1"></span>Regular Field</li>
+        <li><span class="legend-dot" style="background:#fbbf24;border:1px dotted #fbbf24"></span>Dynamic Link</li>
+      </ul>
+    </div>
+    <div class="legend-card">
+      <h4>&#x1f4d0; Symbol Legend</h4>
+      <ul>
+        <li><span class="legend-dot" style="background:none;border:2px solid #22d3ee"></span>Thick = Core entity/document</li>
+        <li><span class="legend-dot" style="background:none;border:1px dashed #64748b"></span>Dashed = Child table (istable)</li>
+        <li><span class="legend-dot" style="background:none;border:1px solid #64748b"></span>Gray = Frappe framework core</li>
+        <li>Solid arrow = Primary / flow relation</li>
+        <li>Dashed arrow = Ledger / indirect</li>
+      </ul>
+    </div>
+    <div class="legend-card">
+      <h4>&#x1f333; Tree Self-Reference</h4>
+      <ul>
+        <li>Company (parent_company)</li>
+        <li>Account (parent_account)</li>
+        <li>Warehouse (parent_warehouse)</li>
+        <li>Item Group / Cost Center</li>
+        <li>Task (parent_task)</li>
+        <li>Employee (reports_to)</li>
+        <li>Item (variant_of)</li>
+      </ul>
+    </div>
+    <div class="legend-card">
+      <h4>&#x1f504; Document Flow Chains</h4>
+      <ul>
+        <li>Sales: Quotation &rarr; SO &rarr; DN &rarr; SI</li>
+        <li>Purchase: MR &rarr; PO &rarr; PR &rarr; PI</li>
+        <li>Manufacturing: BOM &rarr; WO &rarr; SE</li>
+        <li>Finance: SI/PI &rarr; PE &rarr; GL</li>
+        <li>Returns: is_return + return_against</li>
+      </ul>
+    </div>
+    <div class="legend-card">
+      <h4>&#x1f3e2; Inter-Company Links</h4>
+      <ul>
+        <li>Sales Order &harr; Purchase Order</li>
+        <li>Delivery Note &harr; Purchase Receipt</li>
+        <li>Sales Invoice &harr; Purchase Invoice</li>
+        <li>Journal Entry &harr; Journal Entry</li>
+        <li style="color:#64748b">Field prefix: inter_company_*</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer">
+    ERPNext &middot; Frappe Framework &middot; Auto-generated ER Diagram &middot; 64 entities &middot; 32 relationships
+  </div>
+</div>
+<script>
+function toggleToolbar() {
+  document.getElementById('toolbarActions').classList.toggle('open');
+}
+function getCaptureRect() {
+  var container = document.getElementById('report-container');
+  var rect = container.getBoundingClientRect();
+  return {
+    x: rect.left + window.scrollX - 32,
+    y: rect.top + window.scrollY - 32,
+    width: rect.width + 64,
+    height: rect.height + 64
+  };
+}
+function captureCanvas() {
+  var r = getCaptureRect();
+  return html2canvas(document.body, {
+    x: r.x, y: r.y, width: r.width, height: r.height,
+    scale: 2,
+    backgroundColor: '#020617',
+    ignoreElements: function(el) { return el.classList && el.classList.contains('toolbar-actions'); }
+  });
+}
+async function copyAsImage() {
+  var canvas = await captureCanvas();
+  canvas.toBlob(function(blob) {
+    navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+      .then(function() { alert('PNG copied to clipboard'); })
+      .catch(function(err) { alert('Copy failed: ' + err.message); });
+  });
+}
+async function downloadPNG() {
+  var canvas = await captureCanvas();
+  var link = document.createElement('a');
+  link.download = 'erpnext-er-diagram.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+async function downloadPDF() {
+  var canvas = await captureCanvas();
+  var jsPDF = window.jspdf.jsPDF;
+  var pdf = new jsPDF({
+    orientation: canvas.width > canvas.height ? 'l' : 'p',
+    unit: 'px',
+    format: [canvas.width, canvas.height]
+  });
+  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+  pdf.save('erpnext-er-diagram.pdf');
+}
+document.addEventListener('click', function(e) {
+  var toolbar = document.querySelector('.toolbar');
+  if (!toolbar.contains(e.target)) {
+    document.getElementById('toolbarActions').classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>
